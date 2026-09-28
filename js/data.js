@@ -13,6 +13,7 @@
 //   "zona"    = penanda area (instalasi, jemuran) — hanya garis & label, isinya lewat perabot;
 //               kanopi: true = diberi atap polikarbonat; diAtap: true = isinya di atas atap ruang tangga
 //   "taman"   = taman kecil (rumput) di atas lantai lain
+//   "gudangTangga" = gudang di bawah tangga lantai 1 (dinding mengikuti bawah anak tangga, pintu di sisi timur)
 // RUANG.finish : pola lantai di denah — "keramik" | "parket" | "basah" | "beton"
 // RUANG.perabot: [tipe, cx, cy, rotasi°, w?, h?]  (titik tengah, lihat simbol.js)
 // RUANG.label  : [x, y] posisi label (opsional, default tengah ruangan; false = tanpa label)
@@ -97,28 +98,30 @@ export const RUANG = [
   // ---- Tahap 1, lantai 1 (full 12 × 10 m) ----
   { nama: "Living Room", x: 0, y: 0, w: 6, h: 4, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
     label: [4.6, 3.35],
-    perabot: [["tv", 5.75, 2.1, 90], ["mejaTamu", 4.55, 2.1, 0, 0.5, 1.0], ["sofa", 3.3, 2.1, 270]] },
+    perabot: [["tv", 5.75, 2.1, 90], ["mejaTamu", 4.55, 2.1, 0, 0.5, 1.0], ["sofa", 3.3, 2.3, 270]] },
   { nama: "Garasi", x: 6, y: 0, w: 6, h: 6.5, lantai: 1, tahap: 1, jenis: "terbuka", finish: "beton",
     label: [9.2, 6.05],
     perabot: [["mobil", 9.3, 1.9, 90], ["mobil", 9.3, 4.6, 90]] },
-  { nama: "Gudang", x: 0, y: 4, w: 2, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    perabot: [["rak", 0.3, 5.25, 0, 0.35, 1.9]] },
-  { nama: "R. Makan", x: 2, y: 4, w: 4, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    label: [5.2, 6.2],
-    perabot: [["mejaMakan", 3.8, 5.25, 0]] },
+  // foyer: begitu pintu utama dibuka, yang terlihat dinding + rak sepatu, bukan isi rumah
+  { nama: "Foyer", x: 4.5, y: 4, w: 1.5, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
+    label: [5.35, 6.05],
+    perabot: [["rak", 4.75, 5.0, 0, 0.35, 1.4]] },
+  { nama: "R. Makan", x: 0, y: 4, w: 4.5, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
+    label: [3.85, 4.5],
+    perabot: [["mejaMakan", 2.2, 5.25, 0]] },
+  // mesin cuci di dapur, di ujung counter dekat dinding basah KM
   { nama: "Dapur", x: 0, y: 6.5, w: 4, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    perabot: [["counter", 1.8, 9.6, 0, 3.3, 0.6], ["kompor", 1.0, 9.6, 180], ["sink", 2.6, 9.6, 180],
-              ["kulkas", 0.45, 7.0, 270]] },
-  // area mesin cuci & KM tunggal berbagi dinding basah
-  { nama: "Cuci", x: 4, y: 6.5, w: 2, h: 1.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "basah",
-    label: [4.75, 7.3],
-    perabot: [["mesinCuci", 5.6, 7.55, 0]] },
+    perabot: [["counter", 1.6, 9.6, 0, 3.0, 0.6], ["kompor", 0.9, 9.6, 180], ["sink", 2.4, 9.6, 180],
+              ["mesinCuci", 3.55, 9.6, 180], ["kulkas", 0.45, 7.0, 270]] },
+  // selasar penghubung foyer, dapur, KM dan studio
+  { nama: "Selasar", x: 4, y: 6.5, w: 2, h: 1.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
+    label: [5.0, 7.35] },
   { nama: "KM", x: 4, y: 8, w: 2, h: 2, lantai: 1, tahap: 1, jenis: "ruang", finish: "basah",
     label: [5.0, 8.85],
     perabot: [["shower", 4.55, 9.45, 0], ["kloset", 5.55, 9.5, 90], ["wastafel", 5.75, 8.5, 90]] },
   { nama: "Studio", x: 6, y: 6.5, w: 4, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "parket",
     label: [8.6, 7.6],
-    perabot: [["mejaKerja", 8.4, 9.6, 180, 2.0, 0.6], ["kursi", 8.4, 8.95, 0], ["sofa", 6.55, 8.3, 270, 1.8, 0.8]] },
+    perabot: [["mejaKerja", 8.4, 9.6, 180, 2.0, 0.6], ["kursi", 8.4, 8.95, 0], ["sofa", 6.55, 8.5, 270, 1.8, 0.8]] },
   // ruang kosong 2 m di depan studio untuk gerbang besar (menyambung dengan garasi)
   { nama: "Halaman", x: 10, y: 6.5, w: 2, h: 3.5, lantai: 1, tahap: 1, jenis: "terbuka", finish: "beton" },
 
@@ -126,6 +129,9 @@ export const RUANG = [
   // tangga: naik menyusuri dinding kiri, bordes di pojok kiri-atas, lalu menyusuri dinding atas ke mezanin
   { nama: "Tangga", ...VOID_RECT, lantai: 1, tahap: 2, jenis: "tangga",
     ...tanggaL(VOID_RECT, { transpose: true, flipX: true, flipY: true }) },
+  // gudang di bawah lengan tangga yang tinggi (ruang bebas ≥ 1,8 m), pintu dari living room
+  { nama: "Gudang", x: 2.2, y: 0, w: 1.8, h: 1, lantai: 1, tahap: 2, jenis: "gudangTangga", finish: "keramik",
+    label: [3.1, 1.35] },
   { nama: "Void", ...VOID_RECT, lantai: 2, tahap: 2, jenis: "void" },
   // dapur kering + mesin cuci, terbuka ke void; tangga tiba di sini
   { nama: "Dapur Kering", x: VOID, y: 0, w: 7 - VOID, h: 4, lantai: 2, tahap: 2, jenis: "mezanin", finish: "keramik",
@@ -178,17 +184,21 @@ export const RUANG = [
     label: [3.2, 1.2] },
   { nama: "Rooftop", x: 4, y: 1.9, w: 8, h: 2.1, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
   { nama: "Rooftop", x: 0, y: 4, w: 12, h: 6, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false,
-    perabot: [["pot", 4.7, 1.0, 0], ["pot", 11.4, 1.0, 0]] },
-  // pendopo untuk berkumpul: deck kayu, tiang besi, atap limasan genteng
-  { nama: "Pendopo", x: 5.5, y: 1.5, w: 5, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
-    label: [8, 2.25],
-    perabot: [["sofa", 8, 3.2, 0], ["sofa", 8, 5.8, 180], ["kursi", 9.6, 4.5, 90], ["kursi", 6.4, 4.5, 270],
-              ["mejaTamu", 8, 4.5, 0, 1.2, 0.6]] },
-  // taman kecil berumput di selatan pendopo
-  { nama: "Taman", x: 4.6, y: 8.1, w: 7.2, h: 1.75, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput",
-    perabot: [["pot", 5.1, 8.6, 0], ["pot", 11.3, 8.6, 0], ["pot", 11.3, 9.35, 0], ["kursi", 7.4, 9.2, 0], ["kursi", 8.6, 9.2, 0]] },
-  { nama: "Taman", x: 10.9, y: 1.5, w: 0.9, h: 6.4, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", label: false,
-    perabot: [["pot", 11.35, 2.3, 0], ["pot", 11.35, 4.6, 0], ["pot", 11.35, 6.9, 0]] },
+  },
+  // pendopo di tengah area terbuka (x 4–12), simetris; taman mengelilingi di 4 sisi
+  { nama: "Pendopo", x: 5.5, y: 2, w: 5, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
+    label: [8, 2.75],
+    perabot: [["sofa", 8, 3.7, 0], ["sofa", 8, 6.3, 180], ["kursi", 9.6, 5, 90], ["kursi", 6.4, 5, 270],
+              ["mejaTamu", 8, 5, 0, 1.2, 0.6]] },
+  { nama: "Taman", x: 4.6, y: 8.75, w: 6.8, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman",
+    label: [8, 9.2],
+    perabot: [["pot", 5.1, 9.3, 0], ["pot", 10.9, 9.3, 0]] },
+  { nama: "Taman", x: 4.6, y: 0.15, w: 6.8, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
+    perabot: [["pot", 5.1, 0.7, 0], ["pot", 10.9, 0.7, 0]] },
+  { nama: "Taman", x: 4.6, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
+    perabot: [["pot", 4.95, 3.5, 0], ["pot", 4.95, 6.5, 0]] },
+  { nama: "Taman", x: 10.7, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
+    perabot: [["pot", 11.05, 3.5, 0], ["pot", 11.05, 6.5, 0]] },
   // pemanas air surya di tempat terbuka (butuh sinar matahari langsung)
   { nama: "Air Panas", x: 0.3, y: 4.15, w: 3.5, h: 1.15, lantai: 3, tahap: 3, jenis: "zona",
     perabot: [["pemanasAir", 2.05, 4.72, 0, 2.0, 1.0]] },
@@ -209,18 +219,20 @@ export const RUANG = [
 // pintu: engsel "a"/"b" (ujung mana), buka +1/-1 (daun membuka ke arah +y/+x atau -y/-x)
 export const BUKAAN = [
   // lantai 1
-  { lantai: 1, tipe: "pintu",   garis: "v", pos: 6,   a: 4.5, b: 5.5, engsel: "a", buka: -1 },  // masuk dari garasi
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 4,   a: 2.5, b: 5.5 },                          // living–r. makan
-  { lantai: 1, tipe: "pintu",   garis: "v", pos: 2,   a: 5.2, b: 5.9, engsel: "b", buka: -1 },  // gudang
+  { lantai: 1, tipe: "pintu",   garis: "v", pos: 6,   a: 4.5, b: 5.5, engsel: "a", buka: -1 },  // pintu utama → foyer
+  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 4,   a: 4.65, b: 5.9 },                         // foyer–living
+  { lantai: 1, tipe: "bukaan",  garis: "v", pos: 4.5, a: 5.7, b: 6.4 },                          // foyer–r. makan
+  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 6.5, a: 4.65, b: 5.9 },                         // foyer–selasar
+  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 4,   a: 0.4, b: 4.3 },                          // r. makan–living
   { lantai: 1, tipe: "bukaan",  garis: "h", pos: 6.5, a: 2.3, b: 3.8 },                          // r. makan–dapur
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 6.5, a: 4.2, b: 5.8 },                          // r. makan–cuci
-  { lantai: 1, tipe: "bukaan",  garis: "v", pos: 4,   a: 6.7, b: 7.8 },                          // dapur–cuci
+  { lantai: 1, tipe: "bukaan",  garis: "v", pos: 4,   a: 6.7, b: 7.8 },                          // dapur–selasar
   { lantai: 1, tipe: "pintu",   garis: "h", pos: 8,   a: 4.2, b: 4.9, engsel: "a", buka: +1 },  // KM
-  { lantai: 1, tipe: "pintu",   garis: "h", pos: 6.5, a: 7.0, b: 7.9, engsel: "a", buka: +1 },  // studio
+  { lantai: 1, tipe: "pintu",   garis: "v", pos: 6,   a: 6.7, b: 7.5, engsel: "a", buka: +1 },  // selasar → studio
+  { lantai: 1, tipe: "pintu",   garis: "h", pos: 6.5, a: 7.0, b: 7.9, engsel: "a", buka: +1 },  // garasi → studio
   { lantai: 1, tipe: "jendela", garis: "h", pos: 0,   a: 4.3, b: 5.7 },
-  { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 1.8, b: 3.2 },
+  { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 1.8, b: 3.0 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 7.6, b: 8.9 },
-  { lantai: 1, tipe: "boven",   garis: "v", pos: 0,   a: 4.8, b: 5.7 },
+  { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 4.6, b: 5.9 },
   { lantai: 1, tipe: "boven",   garis: "h", pos: 10,  a: 4.6, b: 5.4 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 10,  a: 7.6, b: 9.4 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 7.5, b: 9.3 },
@@ -252,4 +264,4 @@ export const TINGGI_BUKAAN = {
 
 export const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan
 // void bukan lantai; tangga di dalam ruang lain; pendopo & zona sudah termasuk luas rooftop
-export const TIDAK_DIHITUNG = ["void", "tangga", "pendopo", "zona", "taman"];
+export const TIDAK_DIHITUNG = ["void", "tangga", "pendopo", "zona", "taman", "gudangTangga"];

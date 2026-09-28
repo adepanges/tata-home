@@ -140,6 +140,13 @@ export function gambarDenah(svg, state) {
       out.push(gambarTangga(r, lewatLubang ? "tiba" : "bayang"));
     }
   }
+  // 2b. gudang di bawah tangga: garis tersembunyi (putus-putus) + pintu di sisi timur
+  for (const g of aktif.filter((r) => r.jenis === "gudangTangga")) {
+    const s = `stroke="${DINDING}" stroke-width="0.07" stroke-dasharray="0.14 0.07" fill="none"`;
+    const x1 = g.x + g.w, y1 = g.y + g.h, pa = g.y + 0.1, pb = g.y + g.h - 0.1;
+    out.push(`<path d="M${g.x} ${g.y}V${y1}H${x1}V${pb}M${x1} ${pa}V${g.y}" ${s}/>`);
+    out.push(gambarBukaan({ tipe: "pintu", garis: "v", pos: x1, a: pa, b: pb, engsel: "a", buka: +1 }));
+  }
   // 3. void
   for (const r of aktif.filter((r) => r.jenis === "void" && !r.lubangTangga))
     out.push(`<path d="M${r.x} ${r.y}L${r.x + r.w} ${r.y + r.h}M${r.x + r.w} ${r.y}L${r.x} ${r.y + r.h}" stroke="#9a9a9a" stroke-width="0.015" stroke-dasharray="0.12 0.08"/>`);
@@ -217,7 +224,7 @@ export function gambarDenah(svg, state) {
 
   // 9. garis ukuran
   // tiap sisi: rantai ukuran ruangan yang menempel di sisi itu + ukuran total
-  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo", "taman"].includes(r.jenis) && (dibangun(r) || state.ghost));
+  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo", "taman", "gudangTangga"].includes(r.jenis) && (dibangun(r) || state.ghost));
   const sama = (a, b) => Math.abs(a - b) < 1e-6;
   const xs = (f) => [0, W, ...dim.filter(f).flatMap((r) => [r.x, r.x + r.w])];
   const ys = (f) => [0, H, ...dim.filter(f).flatMap((r) => [r.y, r.y + r.h])];

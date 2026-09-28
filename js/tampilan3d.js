@@ -106,6 +106,34 @@ export function buat3D(host) {
     return g;
   }
 
+  // ---- gudang bawah tangga: dinding berundak mengikuti sisi bawah anak tangga ----
+  function buatGudangTangga(r, dibangun) {
+    const g = new THREE.Group();
+    const lantai = box(r.w, TEBAL_PELAT, r.h, matFinish[r.finish] || mat.plester);
+    lantai.position.set(r.x + r.w / 2, TEBAL_PELAT / 2, Z(r.y + r.h / 2));
+    g.add(lantai);
+    const tangga = RUANG.find((t) => t.jenis === "tangga" && t.lantai === r.lantai && dibangun(t));
+    if (!tangga) return g;
+    const di = tangga.anak.filter((a) => overlap(a, r)).sort((p, q) => p.x - q.x);
+    const bawah = (a) => a.top - 0.2;  // sisi bawah pelat anak tangga
+    const t = 0.1, y1 = r.y + r.h, x1 = r.x + r.w;
+    for (const a of di) {  // dinding selatan berundak
+      const xa = Math.max(a.x, r.x), xb = Math.min(a.x + a.w, x1), h = bawah(a);
+      const w = box(xb - xa, h, t, mat.plester);
+      w.position.set((xa + xb) / 2, h / 2, Z(y1 - t / 2));
+      g.add(w);
+    }
+    const hBarat = bawah(di[0]), hTimur = bawah(di[di.length - 1]);
+    const barat = box(t, hBarat, r.h, mat.plester);
+    barat.position.set(r.x + t / 2, hBarat / 2, Z(r.y + r.h / 2));
+    const timur = box(t, hTimur, r.h, mat.plester);
+    timur.position.set(x1 - t / 2, hTimur / 2, Z(r.y + r.h / 2));
+    const pintu = box(0.04, Math.min(1.9, hTimur - 0.1), r.h - 0.2, mat.kusen);
+    pintu.position.set(x1 + 0.01, Math.min(1.9, hTimur - 0.1) / 2, Z(r.y + r.h / 2));
+    g.add(barat, timur, pintu);
+    return g;
+  }
+
   // ---- pendopo: deck kayu ditinggikan, tiang besi hitam, atap limasan genteng ----
   const matPendopo = {
     deck: new THREE.MeshStandardMaterial({ color: "#b98553" }),
@@ -309,13 +337,20 @@ export function buat3D(host) {
 
       const g = grupUntuk(grup, r.tahap, r.lantai);
       if (r.jenis === "tangga") {
+        const gudang = RUANG.filter((o) => o.jenis === "gudangTangga" && o.lantai === r.lantai && dibangun(o));
         for (const a of r.anak) {
-          // lantai 1: anak tangga masif dari tanah; lantai atas: anak tangga melayang (pelat 20 cm)
-          const tebal = r.lantai === 1 ? a.top : 0.2;
+          // lantai 1: anak tangga masif dari tanah, kecuali di atas gudang;
+          // lantai atas: anak tangga melayang (pelat 20 cm)
+          const diAtasGudang = gudang.some((o) => overlap(o, a));
+          const tebal = r.lantai === 1 && !diAtasGudang ? a.top : 0.2;
           const st = box(a.w, tebal, a.h, mat.tangga);
           st.position.set(a.x + a.w / 2, base + a.top - tebal / 2, Z(a.y + a.h / 2));
           g.add(st);
         }
+        continue;
+      }
+      if (r.jenis === "gudangTangga") {
+        g.add(buatGudangTangga(r, dibangun));
         continue;
       }
       if (r.jenis === "zona") {
