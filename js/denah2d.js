@@ -70,6 +70,11 @@ function gambarBukaan(b) {
     const cross = h ? -d * (ujung - engsel) : d * (ujung - engsel);
     out.push(`<path d="M${lx} ${ly}A${L} ${L} 0 0 ${cross > 0 ? 1 : 0} ${ox} ${oy}" fill="none" stroke="#777" stroke-width="0.012" stroke-dasharray="0.05 0.03"/>`);
     out.push(`<line x1="${hx}" y1="${hy}" x2="${lx}" y2="${ly}" stroke="${DINDING}" stroke-width="0.045"/>`);
+  } else if (b.tipe === "inspeksi") {
+    // pintu inspeksi shaft: panel penuh dengan tanda silang
+    out.push(R(b.a, b.b, b.pos - t / 2, b.pos + t / 2, `fill="#fff" stroke="${DINDING}" stroke-width="0.015"`));
+    out.push(h ? `<path d="M${b.a} ${b.pos - t / 2}L${b.b} ${b.pos + t / 2}M${b.a} ${b.pos + t / 2}L${b.b} ${b.pos - t / 2}" stroke="#b5532e" stroke-width="0.015"/>`
+               : `<path d="M${b.pos - t / 2} ${b.a}L${b.pos + t / 2} ${b.b}M${b.pos + t / 2} ${b.a}L${b.pos - t / 2} ${b.b}" stroke="#b5532e" stroke-width="0.015"/>`);
   } else if (b.tipe === "bukaan") {
     const s = 'stroke="#777" stroke-width="0.012" stroke-dasharray="0.08 0.05"';
     out.push(Ln(b.a, b.b, b.pos - t / 2, s), Ln(b.a, b.b, b.pos + t / 2, s));
@@ -207,6 +212,9 @@ export function gambarDenah(svg, state) {
     if (r.jenis === "tangga" || r.jenis === "zona") continue;
     if (r.jenis === "void")
       out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#fff"/>`);
+    else if (r.jenis === "shaft")  // shaft servis: arsir silang (bukaan tembus lantai)
+      out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#eceae4"/>`,
+        `<path d="M${r.x} ${r.y}L${r.x + r.w} ${r.y + r.h}M${r.x + r.w} ${r.y}L${r.x} ${r.y + r.h}" stroke="#9a9a9a" stroke-width="0.012"/>`);
     else out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="url(#pat-${r.finish || "keramik"})"/>`);
   }
   // 2. tangga (di lantai atas terlihat samar lewat void)
@@ -315,7 +323,11 @@ export function gambarDenah(svg, state) {
     const nama = r.jenis === "void" ? "VOID" : r.nama.toUpperCase();
     out.push(`<text x="${lx}" y="${ly}" font-size="0.24" font-weight="600" letter-spacing="0.01" text-anchor="middle" fill="${built ? "#222" : "#999"}" ${halo}>${nama}</text>`);
     const potongan = r.grup ? RUANG.filter((o) => o.grup === r.grup) : [r];
-    const luas = r.jenis === "void" ? `${fmtUkur(r.w)} × ${fmtUkur(r.h)}` : `${fmtUkur(potongan.reduce((s, o) => s + o.w * o.h, 0))} m²`;
+    // luas bersih: dikurangi bagian yang terpakai shaft servis
+    const irisan = (o, s) => Math.max(0, Math.min(o.x + o.w, s.x + s.w) - Math.max(o.x, s.x)) * Math.max(0, Math.min(o.y + o.h, s.y + s.h) - Math.max(o.y, s.y));
+    const shaft = r.jenis === "shaft" ? [] : RUANG.filter((s) => s.jenis === "shaft" && s.lantai === r.lantai);
+    const bersih = potongan.reduce((t, o) => t + o.w * o.h - shaft.reduce((u, s) => u + irisan(o, s), 0), 0);
+    const luas = r.jenis === "void" ? `${fmtUkur(r.w)} × ${fmtUkur(r.h)}` : `${fmtUkur(bersih)} m²`;
     const dak = !built && JENIS_BERPELAT.includes(r.jenis) && tahapPelat(r) <= state.tahap ? " · dak sudah dicor" : "";
     out.push(`<text x="${lx}" y="${ly + 0.27}" font-size="0.19" text-anchor="middle" fill="${built ? "#666" : "#aaa"}" ${halo}>${luas}${built ? "" : " · tahap " + r.tahap + dak}</text>`);
     if (built) out.push(`<circle cx="${lx}" cy="${ly + 0.44}" r="0.06" fill="${TAHAP[r.tahap].warna}"/>`);
@@ -323,7 +335,7 @@ export function gambarDenah(svg, state) {
 
   // 9. garis ukuran
   // tiap sisi: rantai ukuran ruangan yang menempel di sisi itu + ukuran total
-  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo", "taman", "gudangTangga"].includes(r.jenis) && (dibangun(r) || state.ghost));
+  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo", "taman", "gudangTangga", "shaft"].includes(r.jenis) && (dibangun(r) || state.ghost));
   const sama = (a, b) => Math.abs(a - b) < 1e-6;
   const xs = (f) => [0, W, ...dim.filter(f).flatMap((r) => [r.x, r.x + r.w])];
   const ys = (f) => [0, H, ...dim.filter(f).flatMap((r) => [r.y, r.y + r.h])];

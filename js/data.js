@@ -13,6 +13,8 @@
 //   "zona"    = penanda area (instalasi, jemuran) — hanya garis & label, isinya lewat perabot;
 //               kanopi: true = diberi atap polikarbonat; diAtap: true = isinya di atas atap ruang tangga
 //   "taman"   = taman kecil (rumput) di atas lantai lain
+//   "shaft"   = shaft servis vertikal (pipa air bersih/kotor, listrik): berdinding, tanpa pelat, pintu inspeksi tiap lantai;
+//               dinding ruangan lain yang jatuh di dalam shaft otomatis dihapus
 //   "gudangTangga" = gudang di bawah tangga lantai 1 (dinding mengikuti bawah anak tangga, pintu di sisi timur)
 // RUANG.finish : pola lantai di denah — "keramik" | "parket" | "basah" | "beton"
 // RUANG.perabot: [tipe, cx, cy, rotasi°, w?, h?]  (titik tengah, lihat simbol.js)
@@ -144,10 +146,14 @@ export const RUANG = [
               ["mesinCuci", 3.55, 9.6, 180], ["kulkas", 0.45, 7.0, 270]] },
   // selasar penghubung foyer, dapur, KM dan studio
   { nama: "Selasar", x: 4, y: 6.5, w: 2, h: 1.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    label: [5.0, 7.35] },
+    label: [4.95, 6.95] },
   { nama: "KM", x: 4, y: 8, w: 2, h: 2, lantai: 1, tahap: 1, jenis: "ruang", finish: "basah",
     label: [5.0, 8.85],
-    perabot: [["shower", 4.55, 9.45, 0], ["kloset", 5.55, 9.5, 90], ["wastafel", 5.75, 8.5, 90]] },
+    perabot: [["shower", 4.55, 9.45, 0], ["kloset", 5.55, 9.5, 90], ["wastafel", 5.75, 8.72, 90]] },
+  // SHAFT SERVIS 1,0 × 0,9 m menerus lantai 1 → rooftop, di pojok KM bersama | KM Dalam | K. Tamu (lt 2)
+  // dan selasar | KM (lt 1): pipa air bersih dari tandon, air kotor + air bekas + vent, listrik di kompartemen terpisah.
+  // Pintu inspeksi: lt 1 dari selasar, lt 2 dari K. Tamu, rooftop berupa hatch.
+  { nama: "Shaft", x: 5, y: 7.5, w: 1, h: 0.9, lantai: 1, tahap: 1, jenis: "shaft", label: [5.5, 8.0] },
   { nama: "Studio", x: 6, y: 6.5, w: 4.5, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "parket",
     label: [8.85, 7.6],
     perabot: [["mejaKerja", 8.65, 9.6, 180, 2.0, 0.6], ["kursi", 8.65, 8.95, 0], ["sofa", 6.55, 8.5, 270, 1.8, 0.8], ["acIndoor", 10.38, 7.0, 90]] },
@@ -178,18 +184,18 @@ export const RUANG = [
   { nama: "Balkon", x: 10.5, y: 0, w: 1.5, h: 4, lantai: 2, tahap: 2, jenis: "balkon", finish: "keramik",
     label: [11.25, 3.2],
     perabot: [["kursi", 11.25, 0.8, 90], ["kursi", 11.25, 1.6, 90]] },
-  // ---- suite utama: kamar → walk-in closet → KM dalam ----
+  // ---- suite utama: kamar + lemari tanam, KM Dalam langsung dari kamar ----
   { nama: "K. Tidur Utama", x: 8, y: 4, w: 4, h: 6, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
     label: [10.2, 6.9],
     perabot: [["kasur", 10.3, 8.9, 180, 1.8, 2.0], ["sofa", 10.5, 4.55, 0, 1.8, 0.8], ["acIndoor", 11.88, 7.0, 90]] },
-  { nama: "Walk-in", x: 6.8, y: 5, w: 1.2, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [7.55, 6.0],
-    perabot: [["lemari", 7.2, 6.25, 270, 2.0, 0.6]] },
-  // shaft pipa: air bersih dari tandon tepat di atasnya; di bawahnya KM lantai 1 (satu tumpukan basah)
-  { nama: "Shaft", x: 6.55, y: 9.5, w: 0.4, h: 0.4, lantai: 2, tahap: 2, jenis: "zona" },
+  // bekas walk-in → lemari tanam 0,6 m menghadap kamar utama; kolom D3 tertutup badan lemari
+  { nama: "Lemari", x: 7.4, y: 5, w: 0.6, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket", label: false,
+    perabot: [["lemari", 7.7, 6.25, 90, 2.4, 0.6]] },
+  { nama: "Shaft", x: 5, y: 7.5, w: 1, h: 0.9, lantai: 2, tahap: 2, jenis: "shaft", label: [5.5, 8.0] },
   { nama: "KM Dalam", x: 5, y: 7.5, w: 3, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
-    label: [6.5, 8.35],
-    perabot: [["wastafel", 5.3, 8.0, 270], ["wastafel", 5.3, 8.6, 270], ["kloset", 6.3, 9.55, 180], ["shower", 7.45, 9.45, 0, 0.9, 0.9]] },
+    // tata ulang: shaft di pojok barat laut, kloset di dinding barat, 2 wastafel di dinding selatan, shower di pojok tenggara
+    label: [6.9, 8.55],
+    perabot: [["kloset", 5.4, 9.3, 270], ["wastafel", 6.1, 9.75, 180], ["wastafel", 6.65, 9.75, 180], ["shower", 7.45, 9.45, 0, 0.9, 0.9]] },
   // ---- kamar anak, kamar tamu, KM bersama ----
   { nama: "K. Anak", x: 0, y: 5, w: 2.5, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
     label: [1.45, 7.2],
@@ -198,9 +204,10 @@ export const RUANG = [
   { nama: "K. Tamu", x: 2.5, y: 5, w: 2.5, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
     label: [3.5, 7.1],
     perabot: [["kasur", 3.5, 8.9, 180], ["lemari", 4.7, 6.3, 90, 1.4, 0.6], ["acIndoor", 2.62, 6.9, 270]] },
-  { nama: "KM", x: 5, y: 5, w: 1.8, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
-    label: [5.55, 6.1],
-    perabot: [["kloset", 5.4, 7.05, 180], ["shower", 6.3, 7.0, 0], ["wastafel", 6.55, 5.6, 90]] },
+  // KM bersama diperlebar ke x = 7,4 (ambil sebagian bekas walk-in): wastafel di dinding utara, kloset & shower di selatan
+  { nama: "KM", x: 5, y: 5, w: 2.4, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
+    label: [5.75, 6.2],
+    perabot: [["wastafel", 6.55, 5.25, 0], ["kloset", 5.45, 7.1, 180], ["shower", 6.9, 7.0, 0]] },
 
   // ---- Tahap 3: tangga ke rooftop + lantai 3 (rooftop terbuka, tanpa kamar) ----
   // tangga lurus berangkat dari dapur kering (sebelah tempat tangga bawah tiba), naik ke barat
@@ -223,19 +230,22 @@ export const RUANG = [
     perabot: [["acOutdoor", 2.05, 6.9, 0], ["acOutdoor", 2.95, 6.9, 0], ["acOutdoor", 11.65, 7.0, 90]] },
   // pendopo di tengah area terbuka (x 4–12), simetris; taman mengelilingi di 4 sisi.
   // lebar 4,8 m supaya tiang jatuh tepat di as balok x = 6 / 8 / 10
-  { nama: "Pendopo", x: 5.6, y: 2, w: 4.8, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
-    label: [8, 2.75],
-    perabot: [["sofa", 8, 3.7, 0], ["sofa", 8, 6.3, 180], ["kursi", 9.6, 5, 90], ["kursi", 6.4, 5, 270],
-              ["mejaTamu", 8, 5, 0, 1.2, 0.6]] },
+  // digeser 0,5 m ke utara supaya hatch shaft servis (x 5–6, y 7,5–8,4) tidak tertutup lantai pendopo
+  { nama: "Pendopo", x: 5.6, y: 1.5, w: 4.8, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
+    label: [8, 2.25],
+    perabot: [["sofa", 8, 3.2, 0], ["sofa", 8, 5.8, 180], ["kursi", 9.6, 4.5, 90], ["kursi", 6.4, 4.5, 270],
+              ["mejaTamu", 8, 4.5, 0, 1.2, 0.6]] },
   { nama: "Taman", x: 8.3, y: 8.75, w: 3.1, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman",
     label: [9.6, 9.3],
     perabot: [["pot", 10.9, 9.3, 0]] },
   { nama: "Taman", x: 4.6, y: 0.15, w: 6.8, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
     perabot: [["pot", 5.1, 0.7, 0], ["pot", 10.9, 0.7, 0]] },
-  { nama: "Taman", x: 4.6, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
-    perabot: [["pot", 4.95, 3.5, 0], ["pot", 4.95, 6.5, 0]] },
-  { nama: "Taman", x: 10.7, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
-    perabot: [["pot", 11.05, 3.5, 0], ["pot", 11.05, 6.5, 0]] },
+  { nama: "Taman", x: 4.6, y: 1.5, w: 0.7, h: 5.9, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
+    perabot: [["pot", 4.95, 3.0, 0], ["pot", 4.95, 6.0, 0]] },
+  { nama: "Taman", x: 10.7, y: 1.5, w: 0.7, h: 5.9, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
+    perabot: [["pot", 11.05, 3.0, 0], ["pot", 11.05, 6.0, 0]] },
+  // puncak shaft servis: hatch (tutup inspeksi) rata lantai + pipa vent; pipa dari tandon masuk lewat sini
+  { nama: "Hatch shaft", x: 5, y: 7.5, w: 1, h: 0.9, lantai: 3, tahap: 3, jenis: "zona" },
   // jemuran dengan atap polikarbonat kecil, di sisi utara yang memang terbayang dinding R. Tangga
   { nama: "Jemuran · atap polikarbonat", x: 0.5, y: 4.3, w: 3.3, h: 1.3, lantai: 3, tahap: 3, jenis: "zona", kanopi: true,
     perabot: [["jemuran", 2.15, 4.95, 0, 2.9, 0.6]] },
@@ -276,7 +286,7 @@ export const BUKAAN = [
   { lantai: 2, tipe: "jendela", garis: "v", pos: 7,    a: 1.0, b: 3.4 },   // kaca mati laminated ruang kerja–dapur kering
   { lantai: 2, tipe: "kaca",    garis: "v", pos: 10.5, a: 0.1, b: 3.9 },   // dinding kaca geser penuh ke balkon (ringan: tanpa balok anak)
   { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 4.1, b: 4.9, engsel: "a", buka: +1 },  // K. utama
-  { lantai: 2, tipe: "bukaan",  garis: "h", pos: 7.5,  a: 7.0, b: 7.9 },                          // walk-in–KM dalam
+  { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 7.7, b: 8.5, engsel: "a", buka: -1 },  // KM Dalam langsung dari K. Utama
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 5.2, b: 5.9, engsel: "a", buka: +1 },  // KM bersama
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 1.5, b: 2.3, engsel: "b", buka: +1 },  // K. anak
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 2.7, b: 3.5, engsel: "a", buka: +1 },  // K. tamu
@@ -288,6 +298,9 @@ export const BUKAAN = [
   { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 2.9, b: 3.7 },
   { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.3, b: 1.8 },  // cahaya ke void
   // lantai 3
+  // pintu inspeksi shaft servis (60 × 120 cm)
+  { lantai: 1, tipe: "inspeksi", garis: "h", pos: 7.5, a: 5.2, b: 5.8 },   // dari selasar
+  { lantai: 2, tipe: "inspeksi", garis: "v", pos: 5,   a: 7.7, b: 8.3 },   // dari K. Tamu
   { lantai: 3, tipe: "pintu",   garis: "v", pos: 1.2,  a: 0.9, b: 1.7, engsel: "a", buka: +1 },   // bordes → rooftop
   { lantai: 2, tipe: "jendelaTinggi", garis: "h", pos: 0, a: 0.5, b: 3.5 },
 ];
@@ -300,12 +313,13 @@ export const TANPA_DINDING = [
   { lantai: 1, a: "R. Makan",    b: "Dapur" },
   { lantai: 1, a: "Dapur",       b: "Selasar" },
   { lantai: 1, a: "Foyer",       b: "Selasar" },
-  { lantai: 2, a: "Walk-in",      b: "K. Tidur Utama" },
+  { lantai: 2, a: "Lemari",       b: "K. Tidur Utama" },
 ];
 
 // tinggi bukaan dari lantai: [ambang bawah, ambang atas]
 export const TINGGI_BUKAAN = {
   pintu: [0, 2.1], bukaan: [0, 2.4], jendela: [0.9, 2.1], boven: [1.7, 2.1], jendelaTinggi: [0.3, 2.6], kaca: [0, 2.6],
+  inspeksi: [0.3, 1.5],   // pintu inspeksi shaft 60 × 120 cm
 };
 
 // Pelat lantai ≥ 2 dicor satu tahap lebih awal dari ruangannya (sebagai dak/atap datar sementara);
@@ -315,4 +329,4 @@ export const tahapPelat = (r) => (r.lantai >= 2 ? r.tahap - 1 : r.tahap);
 
 export const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan
 // void bukan lantai; tangga di dalam ruang lain; pendopo & zona sudah termasuk luas rooftop
-export const TIDAK_DIHITUNG = ["void", "tangga", "pendopo", "zona", "taman", "gudangTangga"];
+export const TIDAK_DIHITUNG = ["void", "tangga", "pendopo", "zona", "taman", "gudangTangga", "shaft"];

@@ -14,7 +14,7 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
 - Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
 - **Open space** lantai 1: living, r. makan, dapur, foyer & selasar menyatu (daftar `TANPA_DINDING`); satu-satunya sekat
   adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2:
-  walk-in terbuka ke kamar utama, dinding kaca geser ke balkon. Ruang kerja lantai 2 tertutup partisi ringan kedap suara
+  lemari tanam kamar utama (menutup kolom D3), KM Dalam langsung dari kamar, dinding kaca geser ke balkon. Ruang kerja lantai 2 tertutup partisi ringan kedap suara
   (gipsum 2 lapis + rockwool, `PARTISI`) dengan kaca mati laminated ke dapur kering.
 - **AC split** (6 ruang: living, studio lt 1, studio kerja, K. Anak, K. Tamu, K. Utama): outdoor sedekat mungkin
   dengan indoor. Lantai 1 di dinding garasi/halaman; lantai 2 di rooftop tepat di atas atau di samping ruangnya.

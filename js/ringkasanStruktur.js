@@ -49,7 +49,7 @@ export function renderStruktur() {
     <li>Lantai 2: ruang kerja ditutup <b>partisi gipsum 2 lapis + rockwool</b> (±45 kg/m², kedap suara STC ±50)
       dengan kaca mati laminated ke dapur kering dan pintu solid-core ber-seal. Partisi ini ringan (&lt; 200 kg/m),
       jadi cukup di atas pelat walau di atas garasi. Kalau dipakai hebel 10 cm (±345 kg/m), perlu balok anak 4 m
-      dan kedap suaranya malah lebih rendah. Walk-in terbuka ke kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
+      dan kedap suaranya malah lebih rendah. Walk-in diganti lemari tanam (kolom D3 tertutup lemari) dan KM Dalam langsung dari kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
     <li>Dinding utara R. Tangga rooftop dipindah ke y = 0, di atas balok tepi, sehingga tidak perlu balok anak dan bordesnya lebih lega.</li>
     <li>Pendopo 4,8 m sehingga tiangnya tepat di as balok. Atap pendopo memakai material ringan.</li>
     <li>Tandon dipindah ke atas KM Dalam (petak kolom C4–D4), tidak lagi di atas kamar tidur. Pipa turun lewat satu
@@ -153,7 +153,12 @@ export function renderStruktur() {
       dan balok dudukan y = 8,7. Beban turun ke kolom C4 &amp; D4 dalam jarak ±1,3 m. Pelat petak ini ditebalkan atau diberi
       dudukan beton ±15 cm. Di bawahnya KM Dalam, jadi tidak di atas kamar tidur, dan satu tumpukan dengan KM lantai 1.
       Tiang pendopo jatuh tepat di as balok x = 6 / 8 / 10.</li>
-    <li><b>Distribusi air</b>: pipa turun lewat shaft di pojok KM Dalam (±3 m ke shower lantai 2). KM lantai 1 tepat di bawahnya,
+    <li><b>Shaft servis</b> 1,0 × 0,9 m menerus lantai 1 → rooftop (x 5–6, y 7,5–8,4), di pojok pertemuan
+      KM bersama, KM Dalam dan K. Tamu. Pintu inspeksi 60 × 120 cm: lantai 1 dari selasar, lantai 2 dari K. Tamu,
+      rooftop berupa hatch. Lubang pelat dibingkai balok tepi di keempat sisi. Isinya: pipa air bersih dari tandon
+      (±1,5 m), pipa air kotor + air bekas + vent dari kedua KM lantai 2 dan KM lantai 1, jalur listrik/data di
+      kompartemen terpisah (sekat) dari pipa air.</li>
+    <li><b>Distribusi air</b>: pipa turun lewat shaft servis di sebelah tandon (±3 m ke shower lantai 2). KM lantai 1 tepat di bawahnya,
       dapur lantai 1 ±3 m lewat plafon, dapur kering lantai 2 ±8 m lewat plafon koridor. Tekanan gravitasi ke lantai 2
       hanya ±0,2–0,3 bar, jadi <b>pompa booster</b> di sebelah tandon diperlukan. Pemanas air surya ±4 m dari shaft,
       dan pipa air panasnya perlu diisolasi.</li>

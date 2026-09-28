@@ -6,7 +6,7 @@ import { TEBAL_DINDING, TANPA_DINDING } from "./data.js";
 const EPS = 1e-6;
 const sama = (a, b) => Math.abs(a - b) < 1e-6;
 
-export const BERDINDING = ["ruang", "balkon", "mezanin", "void", "rooftop"];
+export const BERDINDING = ["ruang", "balkon", "mezanin", "void", "rooftop", "shaft"];
 
 export const overlap = (a, b) =>
   a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
@@ -98,6 +98,12 @@ export function modelDinding(ruang, semuaBukaan, lantai, dibangun) {
       garis.get(key)[s.kind].push({ a: s.a, b: s.b, tahap: r.tahap });
     }
   }
+  // dinding ruangan lain yang jatuh DI DALAM shaft servis dihapus (shaft = satu ruang tembus lantai)
+  for (const s of ruang.filter((r) => r.jenis === "shaft" && r.lantai === lantai && dibangun(r)))
+    for (const g of garis.values()) {
+      const [p0, p1, a, b] = g.o === "h" ? [s.y, s.y + s.h, s.x, s.x + s.w] : [s.x, s.x + s.w, s.y, s.y + s.h];
+      if (g.pos > p0 + EPS && g.pos < p1 - EPS) g.wall = kurangi(g.wall, [{ a, b }]);
+    }
   const t2 = TEBAL_DINDING / 2;
   const out = { dinding: [], railing: [], parapet: [], bukaan: [] };
   const bukaanLantai = semuaBukaan.filter((b) => b.lantai === lantai);

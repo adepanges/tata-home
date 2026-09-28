@@ -58,7 +58,7 @@ const KET_KOLOM = {
   B3: "hanya lantai 1 (di lantai 2 jatuh di tengah K. Tamu)",
   C3: "hanya lantai 1 (di lantai 2 jatuh di tengah KM)",
   D1: "di tepi utara garasi, tidak menghalangi mobil",
-  D3: "di tepi selatan garasi (dinding studio); di lantai 2 berdiri di batas walk-in–kamar utama (open)",
+  D3: "di tepi selatan garasi (dinding studio); di lantai 2 tertutup lemari tanam kamar utama",
 };
 
 export const KOLOM = KOLOM_STRUKTUR.map(([as, sampai]) => {
@@ -101,8 +101,8 @@ for (const [a, b] of [[0, 4], [4, 6], [6, 8]]) H(2, 5, a, b, { ...DINDING_ANAK, 
 for (const [a, b] of [[5, 6.5], [6.5, 10]]) V(2, 2.5, a, b, { ...DINDING_ANAK, ket: "dinding K. Anak | K. Tamu" });
 for (const [a, b] of [[5, 6.5], [6.5, 10]]) V(2, 5, a, b, { ...DINDING_ANAK, ket: "dinding KM & KM Dalam (basah)" });
 H(2, 7.5, 5, 6, { ...DINDING_ANAK, ket: "dinding KM Dalam (basah)" });
-H(2, 7.5, 6, 8, { ...DINDING_ANAK, ket: "dinding walk-in/KM | KM Dalam (basah)" });
-for (const [a, b] of [[5, 6.5], [6.5, 7.5]]) V(2, 6.8, a, b, { ...DINDING_ANAK, ket: "dinding KM | walk-in (basah, sebagian di atas garasi)" });
+H(2, 7.5, 6, 8, { ...DINDING_ANAK, ket: "dinding KM bersama/lemari | KM Dalam (basah)" });
+for (const [a, b] of [[5, 6.5], [6.5, 7.5]]) V(2, 7.4, a, b, { ...DINDING_ANAK, ket: "dinding KM bersama | lemari (basah, sebagian di atas garasi)" });
 
 // ---- balok tangga rooftop (melayang di void): bordes di pojok barat daya, elevasi +5,12 ----
 const ELEV_BORDES = TINGGI_LANTAI + 2.12;
@@ -139,6 +139,14 @@ V(1, 12, 0, 6.5, { jenis: "sloof", ket: "pengikat pondasi di bawah pintu masuk g
 V(1, 12, 6.5, 10, { jenis: "sloof" });
 H(1, 8, 4, 6, { jenis: "sloof", ket: "dinding KM" });
 V(1, 10.5, 6.5, 10, { jenis: "sloof", ket: "dinding studio | halaman" });
+H(1, 7.5, 5, 6, { jenis: "sloof", ket: "dinding shaft servis" });
+V(1, 5, 7.5, 8.4, { jenis: "sloof", ket: "dinding shaft servis" });
+H(1, 8.4, 5, 6, { jenis: "sloof", ket: "dinding shaft servis" });
+// shaft servis 1,0 × 0,9 m (x 5–6, y 7,5–8,4): lubang pelat dibingkai balok di 4 sisi
+H(2, 8.4, 5, 6, { jenis: "void", ket: "tepi shaft servis (sisi utara & barat: balok anak y = 7,5 & x = 5, sisi timur: as C)" });
+H(3, 7.5, 4, 6, { jenis: "void", ket: "tepi hatch shaft servis" });
+H(3, 8.4, 4, 6, { jenis: "void", ket: "tepi hatch shaft servis" });
+V(3, 5, 7.5, 8.4, { jenis: "void", ket: "tepi hatch shaft servis" });
 
 // ================== DINDING (dari modelDinding) ==================
 const semua = () => true;

@@ -46,7 +46,7 @@ const NAMA_LANTAI = { 1: "Lantai 1", 2: "Lantai 2", 3: "Rooftop" };
 function daftarRuang() {
   const hasil = [], sudah = new Set();
   for (const r of RUANG) {
-    if (r.tahap > state.tahap || ["zona", "tangga"].includes(r.jenis) || (r.jenis === "void" && r.label === false)) continue;
+    if (r.tahap > state.tahap || ["zona", "tangga", "shaft"].includes(r.jenis) || (r.jenis === "void" && r.label === false)) continue;
     const key = `${r.lantai}|${r.grup || r.nama}`;
     if (sudah.has(key)) continue;
     sudah.add(key);

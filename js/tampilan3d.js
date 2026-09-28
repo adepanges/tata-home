@@ -314,7 +314,9 @@ export function buat3D(host) {
         const [bawah, atas] = TINGGI_BUKAAN[b.tipe];
         g.add(potongDinding(b.garis, b.pos, b.a, b.b, base, atas, tinggiDinding, matDinding(b.tahap)));
         if (bawah > 0) g.add(potongDinding(b.garis, b.pos, b.a, b.b, base, 0, bawah, matDinding(b.tahap)));
-        if (b.tipe !== "pintu" && b.tipe !== "bukaan")
+        if (b.tipe === "inspeksi")  // pintu inspeksi shaft: panel tertutup
+          g.add(potongDinding(b.garis, b.pos, b.a, b.b, base, bawah, atas, mat.kusen, 0.04));
+        else if (b.tipe !== "pintu" && b.tipe !== "bukaan")
           g.add(potongDinding(b.garis, b.pos, b.a, b.b, base, bawah, atas, mat.kaca, 0.03));
         if (b.tipe === "pintu") {
           // daun pintu dibuka 90°
@@ -412,7 +414,7 @@ export function buat3D(host) {
         g.add(label(r.nama, cx, base + TEBAL_PELAT + 5.2, cz));
         continue;
       }
-      if (r.jenis !== "void") {
+      if (r.jenis !== "void" && r.jenis !== "shaft") {
         const pelat = box(r.w, TEBAL_PELAT, r.h, matFinish[r.finish] || mat.plester);
         pelat.position.set(cx, base + TEBAL_PELAT / 2, cz);
         g.add(pelat);
@@ -421,7 +423,7 @@ export function buat3D(host) {
       // tertutup dak / atap sementara lantai atas → tidak perlu atap sendiri
       const diAtas = RUANG.filter((o) => o.lantai === r.lantai + 1 && overlap(o, r) && (dibangun(o) ||
         (tahapPelat(o) <= state.tahap && (JENIS_BERPELAT.includes(o.jenis) || o.jenis === "void"))));
-      if (["ruang", "mezanin", "void"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap && state.potong !== r.lantai) {
+      if (["ruang", "mezanin", "void", "shaft"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap && state.potong !== r.lantai) {
         const atap = box(r.w + 0.3, 0.1, r.h + 0.3, mat.atap);
         atap.position.set(cx, base + TINGGI_LANTAI + 0.05, cz);
         g.add(atap);
