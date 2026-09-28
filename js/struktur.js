@@ -220,9 +220,11 @@ export const BALOK = BALOK_DEF.map((d) => {
   if (b.jenis === "kantilever") b.kolomUjung = [kA, null];
   const garis = b.o === "h" ? `${namaY(b.pos)}/${namaX(b.a)}–${namaX(b.b)}` : `${namaX(b.pos)}/${namaY(b.a)}–${namaY(b.b)}`;
   b.id = `${KODE[b.jenis]}${b.level} ${garis}`;
-  // tahap: sloof & kolom lt 1 = tahap 1; balok induk/void lantai k dicor sebagai ring balok tahap k-1
-  // (ukuran sudah ukuran final); balok anak & tangga ikut pelatnya.
-  b.tahap = b.jenis === "sloof" ? 1 : ["induk", "void"].includes(b.jenis) ? b.level - 1 : b.level;
+  // tahap: seluruh rangka balok satu level (induk, anak, tepi void, dudukan tandon) dicor BERSAMA di tahap
+  // sebelum lantainya dipakai — balok lantai 2 di tahap 1, balok rooftop di tahap 2 — monolit dengan kolom,
+  // ukuran final, tanpa sambungan/stek belakangan. Balok bordes & kantilever tangga rooftop dicor bersama
+  // kolom & dinding lantai 2 (tahap 2). Ring balok parapet/R. Tangga ikut dindingnya (tahap 3).
+  b.tahap = b.jenis === "sloof" ? 1 : ["tangga", "kantilever"].includes(b.jenis) ? 2 : b.level - 1;
   return b;
 });
 

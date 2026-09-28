@@ -80,7 +80,11 @@ export function renderStruktur() {
     Lalu dicek kasar terhadap momen dari jalur beban pelat → balok anak → balok induk → kolom.</li>
     <li>Pelat lantai 2: ${ASUMSI.pelat[2] * 100} cm. Rooftop: ${ASUMSI.pelat[3] * 100} cm (taman, tandon, pendopo).
       Beban hidup ${ASUMSI.ll[2]} / ${ASUMSI.ll[3]} kg/m². KM +${ASUMSI.basah} kg/m², taman +${ASUMSI.taman} kg/m².</li>
-    <li>Balok induk lantai 2 dicor di tahap 1 sebagai ring balok, dengan ukuran final. Balok induk rooftop dicor di tahap 2.</li></ul>`);
+    <li><b>Urutan cor per tahap</b>: seluruh balok lantai 2 (induk, anak, tepi void) dicor di <b>tahap 1</b> bersama kolom
+      lantai 1, dengan ukuran final. Balok anak untuk dinding KM dan kamar lantai 2 juga dicor di tahap 1, meski dindingnya
+      baru dibangun di tahap 2. Seluruh balok rooftop, termasuk dudukan tandon, dicor di <b>tahap 2</b>. Dengan begitu
+      tidak ada balok yang disambung atau dibobok belakangan. Pelat lantai 2 sebaiknya sekalian dicor di tahap 1 sebagai
+      dak (atap datar + waterproofing sementara). Kalau pelat ditunda, siapkan stek tulangan di semua balok.</li></ul>`);
 
   // ---- beban dinding: hebel vs bata ----
   const tot = R.bebanDinding.filter((b) => b.lantai > 1);
