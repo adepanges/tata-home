@@ -42,12 +42,11 @@ export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca (kaca ge
 
 // Partisi ringan kedap suara untuk ruang kerja lantai 2: rangka baja ringan 75 mm, gipsum 2 × 12 mm tiap sisi,
 // isi rockwool 50 mm (±60 kg/m³) → ±45 kg/m², STC ±50 (setara/lebih kedap dari hebel 10 cm, STC ±40–45).
-// Cukup di atas pelat (tanpa balok anak) walau di atas garasi.
+// Partisi duduk tepat di atas balok induk as D (x = 8), tidak membebani pelat.
 export const PARTISI = {
   material: { nama: "Partisi gipsum 2 lapis + rockwool", berat: 45, warna: "#d4b77a" },
   garis: [
-    { lantai: 2, garis: "v", pos: 7, a: 0, b: 4 },   // ruang kerja | dapur kering (+ kaca mati laminated)
-    { lantai: 2, garis: "h", pos: 4, a: 7, b: 8 },   // ruang kerja | koridor (pintu solid-core + seal)
+    { lantai: 2, garis: "v", pos: 8, a: 0, b: 4 },   // ruang kerja | dapur kering (pintu solid-core + seal, kaca mati laminated)
   ],
 };
 export const partisiDi = (lantai, o, pos, t) => PARTISI.garis.some((g) =>
@@ -171,16 +170,17 @@ export const RUANG = [
     label: [3.1, 1.35] },
   { nama: "Void", ...VOID_RECT, lantai: 2, tahap: 2, jenis: "void" },
   // dapur kering + mesin cuci, terbuka ke void; tangga tiba di sini
-  { nama: "Dapur Kering", x: VOID, y: 0, w: 7 - VOID, h: 4, lantai: 2, tahap: 2, jenis: "mezanin", finish: "keramik",
-    label: [5.3, 2.4],
-    perabot: [["mesinCuci", 6.6, 0.5, 0], ["counter", 6.6, 2.2, 0, 0.6, 2.4], ["sink", 6.6, 1.8, 90], ["kompor", 6.6, 2.9, 90]] },
+  // dapur kering sampai as D (x = 8); counter menempel dinding ruang kerja, di bawah kaca mati
+  { nama: "Dapur Kering", x: VOID, y: 0, w: 8 - VOID, h: 4, lantai: 2, tahap: 2, jenis: "mezanin", finish: "keramik",
+    label: [5.6, 2.4],
+    perabot: [["mesinCuci", 7.7, 0.5, 0], ["counter", 7.7, 1.9, 0, 0.6, 2.0], ["sink", 7.7, 1.4, 90], ["kompor", 7.7, 2.45, 90]] },
   { nama: "Mezanin", x: 0, y: VOID, w: VOID, h: 4 - VOID, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket" },
   // satu koridor; bagian kirinya sekaligus tempat memandang ke void
   { nama: "Koridor", x: 0, y: 4, w: 8, h: 1, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [5.6, 4.45] },
-  // ruang kerja tertutup partisi ringan kedap suara (lihat PARTISI) + kaca mati ke dapur kering
-  { nama: "Studio Kerja", x: 7, y: 0, w: 3.5, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [8.7, 2.3],
-    perabot: [["mejaKerja", 8.5, 0.45, 0, 2.0, 0.6], ["kursi", 8.5, 1.05, 180], ["rak", 9.3, 3.75, 0, 1.8, 0.35], ["acIndoor", 10.0, 0.18, 0]] },
+  // ruang kerja pribadi 2,5 × 4 m: dinding barat di atas balok induk as D (x = 8), partisi kedap suara (lihat PARTISI)
+  { nama: "Studio Kerja", x: 8, y: 0, w: 2.5, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
+    label: [9.25, 2.3],
+    perabot: [["mejaKerja", 9.25, 0.45, 0, 2.0, 0.6], ["kursi", 9.25, 1.05, 180], ["rak", 9.65, 3.75, 0, 1.6, 0.35], ["acIndoor", 9.9, 0.18, 0]] },
   { nama: "Balkon", x: 10.5, y: 0, w: 1.5, h: 4, lantai: 2, tahap: 2, jenis: "balkon", finish: "keramik",
     label: [11.25, 3.2],
     perabot: [["kursi", 11.25, 0.8, 90], ["kursi", 11.25, 1.6, 90]] },
@@ -282,8 +282,8 @@ export const BUKAAN = [
   { lantai: 1, tipe: "jendela", garis: "v", pos: 10.5, a: 7.6, b: 9.4 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 8.4, b: 9.8 },
   // lantai 2
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,    a: 7.1, b: 7.9, engsel: "a", buka: -1 },  // ruang kerja (solid-core + seal)
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 7,    a: 1.0, b: 3.4 },   // kaca mati laminated ruang kerja–dapur kering
+  { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 3.05, b: 3.85, engsel: "b", buka: +1 },  // ruang kerja (solid-core + seal)
+  { lantai: 2, tipe: "jendela", garis: "v", pos: 8,    a: 0.9, b: 2.8 },   // kaca mati laminated ruang kerja–dapur kering
   { lantai: 2, tipe: "kaca",    garis: "v", pos: 10.5, a: 0.1, b: 3.9 },   // dinding kaca geser penuh ke balkon (ringan: tanpa balok anak)
   { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 4.1, b: 4.9, engsel: "a", buka: +1 },  // K. utama
   { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 7.7, b: 8.5, engsel: "a", buka: -1 },  // KM Dalam langsung dari K. Utama

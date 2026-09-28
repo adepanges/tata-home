@@ -46,10 +46,9 @@ export function renderStruktur() {
     <li>Dinding foyer digeser ke x = 4, segaris dinding KM. Garis ini jadi as kolom B, dengan satu balok &amp; sloof menerus.</li>
     <li>Open space lantai 1: dinding living–r. makan, r. makan–dapur, foyer–living, foyer–selasar dan dapur–selasar
       dihapus. Pemisah dapur–r. makan cukup meja island.</li>
-    <li>Lantai 2: ruang kerja ditutup <b>partisi gipsum 2 lapis + rockwool</b> (±45 kg/m², kedap suara STC ±50)
-      dengan kaca mati laminated ke dapur kering dan pintu solid-core ber-seal. Partisi ini ringan (&lt; 200 kg/m),
-      jadi cukup di atas pelat walau di atas garasi. Kalau dipakai hebel 10 cm (±345 kg/m), perlu balok anak 4 m
-      dan kedap suaranya malah lebih rendah. Walk-in diganti lemari tanam (kolom D3 tertutup lemari) dan KM Dalam langsung dari kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
+    <li>Lantai 2: ruang kerja pribadi 2,5 × 4 m. Dinding baratnya digeser ke as D (x = 8), jadi duduk tepat di atas
+      balok induk D/1–3. Dindingnya <b>partisi gipsum 2 lapis + rockwool</b> (±45 kg/m², kedap suara STC ±50) dengan
+      kaca mati laminated ke dapur kering dan pintu solid-core ber-seal. Dapur kering jadi 4 × 4 m. Walk-in diganti lemari tanam (kolom D3 tertutup lemari) dan KM Dalam langsung dari kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
     <li>Dinding utara R. Tangga rooftop dipindah ke y = 0, di atas balok tepi, sehingga tidak perlu balok anak dan bordesnya lebih lega.</li>
     <li>Pendopo 4,8 m sehingga tiangnya tepat di as balok. Atap pendopo memakai material ringan.</li>
     <li>Tandon dipindah ke atas KM Dalam (petak kolom C4–D4), tidak lagi di atas kamar tidur. Pipa turun lewat satu
@@ -143,8 +142,8 @@ export function renderStruktur() {
   out.push(`<h3>Perhatian khusus</h3><ul>
     <li><b>Garasi 6 × 6,5 m tanpa kolom tengah</b>: balok bentang panjang ${garasi.map((b) => `${b.id} ${b.dim.join("/")}`).join(", ")}.
       Balok anak as y = 4 (${BALOK.filter((b) => b.level === 2 && b.o === "h" && b.pos === 4 && b.a >= 6).map((b) => b.dim.join("/")).join(" & ")})
-      menopang dinding K. Utama di atasnya. Dinding lantai 2 di atas garasi duduk di balok, kecuali dinding kaca
-      geser studio–balkon dan partisi gipsum ruang kerja yang cukup ringan untuk pelat.</li>
+      menopang dinding K. Utama di atasnya. Dinding lantai 2 di atas garasi duduk di balok (termasuk partisi ruang
+      kerja di as D), kecuali dinding kaca geser studio–balkon yang cukup ringan untuk pelat.</li>
     <li><b>Tepi void</b>: balok tepi void di as 2 dan as B. Dinding void 6 m di as A dan as 1 diberi balok ikat
       selebar dinding, supaya tidak ada balok menggantung di atas tangga. Bordes tangga rooftop ditumpu
       balok dalam dinding barat + balok kantilever 1 m dari kolom A2.</li>
