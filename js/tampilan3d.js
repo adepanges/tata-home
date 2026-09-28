@@ -163,6 +163,22 @@ export function buat3D(host) {
     daun: new THREE.MeshStandardMaterial({ color: "#5d8f3e" }),
     rotan: new THREE.MeshStandardMaterial({ color: "#3b3530" }),
   };
+  // atap polikarbonat sederhana: 4 tiang besi + lembaran bening sedikit miring
+  const matKanopi = new THREE.MeshStandardMaterial({ color: "#cfe6f7", transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false });
+  function buatKanopi(r, y0) {
+    const g = new THREE.Group(), tinggi = 2.5;
+    for (const [x, y] of [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]]) {
+      const t = box(0.08, tinggi, 0.08, matAlat.logam);
+      t.position.set(x, y0 + tinggi / 2, Z(y));
+      g.add(t);
+    }
+    const atap = new THREE.Mesh(new THREE.BoxGeometry(r.w + 0.3, 0.02, r.h + 0.3), matKanopi);
+    atap.position.set(r.x + r.w / 2, y0 + tinggi + 0.05, Z(r.y + r.h / 2));
+    atap.rotation.x = 0.05;
+    g.add(atap);
+    return g;
+  }
+
   function perabot3D([tipe, x, y, rot = 0, w, h], y0) {
     const g = new THREE.Group();
     const add = (m, px, py, pz) => { m.position.set(px, py, pz); m.castShadow = true; g.add(m); return m; };
@@ -232,7 +248,9 @@ export function buat3D(host) {
     const grup = new Map();
     const tinggiDinding = TINGGI_LANTAI - TEBAL_PELAT;
 
-    for (const lantai of [1, 2, 3]) {
+    // potong: tampilkan hanya sampai lantai ini (untuk fokus ke ruangan di lantai bawah)
+    const lantaiMaks = state.potong || 3;
+    for (const lantai of [1, 2, 3].filter((l) => l <= lantaiMaks)) {
       const base = (lantai - 1) * TINGGI_LANTAI;
       const m = modelDinding(RUANG, BUKAAN, lantai, dibangun);
       const matDinding = (tahap) => (state.warnaTahap ? matTahap[tahap] : mat.plester);
@@ -267,6 +285,7 @@ export function buat3D(host) {
     }
 
     for (const r of RUANG) {
+      if (r.lantai > lantaiMaks) continue;
       const built = dibangun(r);
       if (!built && !state.ghost) continue;
       const base = (r.lantai - 1) * TINGGI_LANTAI;
@@ -300,7 +319,17 @@ export function buat3D(host) {
         continue;
       }
       if (r.jenis === "zona") {
-        for (const p of r.perabot || []) { const o = perabot3D(p, base + TEBAL_PELAT); if (o) g.add(o); }
+        const y0 = r.diAtap ? base + TINGGI_LANTAI + 0.1 : base + TEBAL_PELAT;  // diAtap: di atas atap ruang tangga
+        for (const p of r.perabot || []) { const o = perabot3D(p, y0); if (o) g.add(o); }
+        if (r.kanopi) g.add(buatKanopi(r, base + TEBAL_PELAT));
+        continue;
+      }
+      if (r.jenis === "taman") {
+        const rumput = box(r.w, 0.06, r.h, matFinish.rumput);
+        rumput.position.set(cx, base + TEBAL_PELAT + 0.03, cz);
+        g.add(rumput);
+        for (const p of r.perabot || []) { const o = perabot3D(p, base + TEBAL_PELAT + 0.06); if (o) g.add(o); }
+        if (r.label !== false) g.add(label(r.nama, cx, base + TEBAL_PELAT + 1.0, cz));
         continue;
       }
       if (r.jenis === "pendopo") {
@@ -314,7 +343,7 @@ export function buat3D(host) {
         g.add(pelat);
       }
       const diAtas = RUANG.filter((o) => o.lantai === r.lantai + 1 && dibangun(o) && overlap(o, r));
-      if (["ruang", "mezanin", "void"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap) {
+      if (["ruang", "mezanin", "void"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap && state.potong !== r.lantai) {
         const atap = box(r.w + 0.3, 0.1, r.h + 0.3, mat.atap);
         atap.position.set(cx, base + TINGGI_LANTAI + 0.05, cz);
         g.add(atap);
@@ -347,6 +376,20 @@ export function buat3D(host) {
     tahapSebelumnya = state.tahap;
   }
 
+  // animasi kamera halus ke posisi & target baru
+  let kameraAnim = null;
+  function kameraKe(pos, target) {
+    kameraAnim = { start: performance.now(), p0: camera.position.clone(), t0: controls.target.clone(),
+      p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...target) };
+  }
+  function terbang(now) {
+    if (!kameraAnim) return;
+    const k = Math.min((now - kameraAnim.start) / 800, 1), e = k * k * (3 - 2 * k);
+    camera.position.lerpVectors(kameraAnim.p0, kameraAnim.p1, e);
+    controls.target.lerpVectors(kameraAnim.t0, kameraAnim.t1, e);
+    if (k === 1) kameraAnim = null;
+  }
+
   function tumbuh(now) {
     for (const a of animasi) {
       const t = Math.min((now - a.start) / 700, 1);
@@ -368,6 +411,7 @@ export function buat3D(host) {
 
   renderer.setAnimationLoop((now) => {
     tumbuh(now);
+    terbang(now);
     controls.update();
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
@@ -377,6 +421,14 @@ export function buat3D(host) {
     render,
     // render ulang tanpa animasi tumbuh (mis. saat ganti opsi tampilan)
     renderUlang(s) { tahapSebelumnya = s.tahap; render(s); },
-    kameraAtas(on) { camera.position.set(...(on ? KAMERA_ATAS : KAMERA_AWAL)); },
+    kameraAtas(on) { kameraKe(on ? KAMERA_ATAS : KAMERA_AWAL, [LAHAN.w / 2, 2, LAHAN.h / 2]); },
+    // arahkan kamera ke sebuah ruangan (dilihat miring dari tenggara-atas)
+    fokus(r) {
+      if (!r) return kameraKe(KAMERA_AWAL, [LAHAN.w / 2, 2, LAHAN.h / 2]);
+      const base = (r.lantai - 1) * TINGGI_LANTAI;
+      const t = [r.x + r.w / 2, base + 1, Z(r.y + r.h / 2)];
+      const d = Math.max(r.w, r.h) * 1.1 + 4;
+      kameraKe([t[0] + d * 0.55, t[1] + d * 0.95, t[2] + d * 0.75], t);
+    },
   };
 }

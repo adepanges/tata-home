@@ -156,11 +156,6 @@ export function gambarDenah(svg, state) {
     const [a, b] = r.h >= r.w ? [p, q] : [p, q];
     out.push(`<path d="M${x0} ${y0}L${a[0]} ${a[1]}L${x1} ${y0}M${a[0]} ${a[1]}L${b[0]} ${b[1]}M${x0} ${y1}L${b[0]} ${b[1]}L${x1} ${y1}" ${s}/>`);
   }
-  // 4c. zona instalasi: garis putus-putus + label kecil
-  for (const r of aktif.filter((r) => r.jenis === "zona")) {
-    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="0.08" fill="none" stroke="#4a78b8" stroke-width="0.02" stroke-dasharray="0.1 0.06"/>`);
-    out.push(`<text x="${r.x + 0.08}" y="${r.y - 0.06}" font-size="0.17" font-weight="600" fill="#2f5d86" ${halo}>${r.nama.toUpperCase()}</text>`);
-  }
   // 5. dinding, railing, bukaan
   const m = modelDinding(RUANG, BUKAAN, lt, dibangun);
   const t2 = TEBAL_DINDING / 2;
@@ -177,6 +172,17 @@ export function gambarDenah(svg, state) {
       ? `<rect x="${r.a}" y="${r.pos - t2}" width="${r.b - r.a}" height="${TEBAL_DINDING}" fill="#9a9a9a" stroke="${DINDING}" stroke-width="0.015"/>`
       : `<rect x="${r.pos - t2}" y="${r.a}" width="${TEBAL_DINDING}" height="${r.b - r.a}" fill="#9a9a9a" stroke="${DINDING}" stroke-width="0.015"/>`);
   for (const b of m.bukaan) out.push(gambarBukaan(b));
+  // 5b. zona instalasi (di atas dinding, supaya label terbaca): garis putus-putus + label kecil
+  for (const r of aktif.filter((r) => r.jenis === "zona")) {
+    if (r.kanopi)  // atap polikarbonat: bidang bening + garis gording
+      out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#bcd8f0" fill-opacity="0.25"/>`,
+        ...Array.from({ length: Math.floor(r.h / 0.6) }, (_, i) =>
+          `<line x1="${r.x}" x2="${r.x + r.w}" y1="${r.y + (i + 1) * 0.6}" y2="${r.y + (i + 1) * 0.6}" stroke="#8ab4d8" stroke-width="0.01"/>`),
+        ...[[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].map(([x, y]) =>
+          `<rect x="${x - 0.05}" y="${y - 0.05}" width="0.1" height="0.1" fill="#333"/>`));
+    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="0.08" fill="none" stroke="#4a78b8" stroke-width="0.02" stroke-dasharray="0.1 0.06"/>`);
+    out.push(`<text x="${r.x + 0.08}" y="${r.y - 0.06}" font-size="0.17" font-weight="600" fill="#2f5d86" ${halo}>${r.nama.toUpperCase()}</text>`);
+  }
   // kolom carport bila tertutup lantai atas
   if (lt === 1)
     for (const r of aktif.filter((r) => r.jenis === "terbuka" && RUANG.some((o) => o.lantai === 2 && dibangun(o) && o.x < r.x + r.w && r.x < o.x + o.w && o.y < r.y + r.h && r.y < o.y + o.h)))
@@ -211,7 +217,7 @@ export function gambarDenah(svg, state) {
 
   // 9. garis ukuran
   // tiap sisi: rantai ukuran ruangan yang menempel di sisi itu + ukuran total
-  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo"].includes(r.jenis) && (dibangun(r) || state.ghost));
+  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo", "taman"].includes(r.jenis) && (dibangun(r) || state.ghost));
   const sama = (a, b) => Math.abs(a - b) < 1e-6;
   const xs = (f) => [0, W, ...dim.filter(f).flatMap((r) => [r.x, r.x + r.w])];
   const ys = (f) => [0, H, ...dim.filter(f).flatMap((r) => [r.y, r.y + r.h])];
