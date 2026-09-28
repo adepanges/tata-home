@@ -1,6 +1,7 @@
 # tata-home
 
-Visualisasi **denah rumah bertumbuh** (2D + 3D) untuk rumah 10 × 12 m.
+Visualisasi **denah rumah bertumbuh** (2D + 3D) untuk rumah lebar muka 10 m × dalam 12 m,
+menghadap timur (jalan di sisi kanan denah, utara = atas).
 
 - **Denah 2D** (SVG, gaya gambar kerja): dinding tebal tersambung, pintu dengan busur bukaan,
   jendela, pola lantai (keramik/parket/KM/beton), furnitur, garis ukuran berantai di 4 sisi,
@@ -33,7 +34,8 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
 
 ## Mengubah denah (`js/data.js`)
 
-- `RUANG`: tiap ruangan `x, y, w, h` (m, y=0 = sisi depan/jalan), `lantai`, `tahap`, `jenis`,
+- `LAHAN`, `JALAN`: ukuran lahan di denah (x ke kanan, y ke bawah) dan sisi yang menghadap jalan (`"kanan"` / `"atas"`)
+- `RUANG`: tiap ruangan `x, y, w, h` (m), `lantai`, `tahap`, `jenis`,
   `finish` (`keramik` | `parket` | `basah` | `beton`), `perabot` (`[tipe, cx, cy, rotasi, w?, h?]`), `label` (opsional)
   - `jenis`: `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport), `"balkon"`,
     `"tangga"` (bentuk L dihitung `tanggaL()`), `"void"`, `"mezanin"` (railing ke arah void)

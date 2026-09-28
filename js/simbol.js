@@ -47,6 +47,8 @@ export const SIMBOL = {
   wastafel: { w: 0.5, h: 0.4, gambar: (w, h) => rect(0, 0, w, h, 0.05) + ell(w / 2, h / 2 + 0.03, 0.17, 0.12, T) + circ(w / 2, 0.07, 0.02, T) },
   shower: { w: 0.9, h: 0.9, gambar: (w, h) => rect(0, 0, w, h, 0, 'stroke="#4a4a4a" stroke-width="0.02" fill="#f4f8f9"') +
     path(`M0 0L${w} ${h}M${w} 0L0 ${h}`) + circ(w / 2, h / 2, 0.04, G) },
+  mesinCuci: { w: 0.6, h: 0.6, gambar: (w, h) => rect(0, 0, w, h, 0.03) + rect(0.04, 0.03, w - 0.08, 0.09, 0.01, T) +
+    circ(w / 2, h / 2 + 0.05, 0.2, T) + circ(w / 2, h / 2 + 0.05, 0.12, T) },
   mejaKerja: { w: 1.6, h: 0.6, gambar: (w, h) => rect(0, 0, w, h, 0.02) + rect(w / 2 - 0.3, 0.06, 0.6, 0.04, 0, 'fill="#4a4a4a"') },
   kursi: { w: 0.5, h: 0.5, gambar: (w, h) => rect(0.03, 0.08, w - 0.06, h - 0.1, 0.08) + rect(0.06, 0, w - 0.12, 0.1, 0.04) },
   rak: { w: 0.35, h: 2.0, gambar: (w, h) => {

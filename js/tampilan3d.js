@@ -3,14 +3,15 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { LAHAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN } from "./data.js";
 import { modelDinding, overlap } from "./model.js";
 
 // 2D (x, y) -> 3D (x, z). Depan lahan (y=0) menghadap kamera awal.
 const Z = (y) => LAHAN.h - y;
 const WARNA_FINISH = { keramik: "#f1ede5", parket: "#d9bf94", basah: "#dde7ea", beton: "#cfcdc8" };
-const KAMERA_AWAL = [LAHAN.w / 2 + 9, 14, LAHAN.h + 12];
-const KAMERA_ATAS = [LAHAN.w / 2 + 4, 20, LAHAN.h + 7];
+// kamera awal memandang dari arah jalan
+const KAMERA_AWAL = JALAN === "kanan" ? [LAHAN.w + 12, 13, LAHAN.h + 8] : [LAHAN.w / 2 + 9, 14, LAHAN.h + 12];
+const KAMERA_ATAS = JALAN === "kanan" ? [LAHAN.w + 6, 20, LAHAN.h + 4] : [LAHAN.w / 2 + 4, 20, LAHAN.h + 7];
 
 function box(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -91,7 +92,7 @@ export function buat3D(host) {
     return m;
   }
 
-  function buatMobil(x, y) {
+  function buatMobil(x, y, rot) {
     const g = new THREE.Group();
     const bodi = box(1.8, 0.8, 4.4, new THREE.MeshStandardMaterial({ color: "#f2f2f2" }));
     bodi.position.set(0, 0.55, 0);
@@ -99,6 +100,7 @@ export function buat3D(host) {
     kabin.position.set(0, 1.25, 0.2);
     g.add(bodi, kabin);
     g.position.set(x, 0, Z(y));
+    g.rotation.y = (rot * Math.PI) / 180;
     return g;
   }
 
@@ -210,11 +212,8 @@ export function buat3D(host) {
           g.add(k);
         }
       }
-      if (r.mobil) {
-        const jarak = (r.w - 1.8 * r.mobil) / (r.mobil + 1);
-        for (let i = 0; i < r.mobil; i++)
-          g.add(buatMobil(r.x + jarak + 0.9 + i * (1.8 + jarak), r.y + 0.4 + 2.2));
-      }
+      for (const [tipe, x, y, rot = 0] of r.perabot || [])
+        if (tipe === "mobil") g.add(buatMobil(x, y, rot));
       if (!diAtas.length) {
         const t = r.jenis === "terbuka" ? 0.3 : TINGGI_LANTAI;
         g.add(label(r.nama, cx, base + t + 0.4, cz));

@@ -1,10 +1,10 @@
 // Denah 2D gaya gambar kerja: dinding tebal tersambung, pintu dengan busur bukaan,
 // jendela, pola lantai, furnitur, garis ukuran berantai, skala batang.
-import { LAHAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING } from "./data.js";
 import { modelDinding } from "./model.js";
 import { gambarPerabot } from "./simbol.js";
 
-const PAD = { l: 2.3, t: 2.9, r: 1.3, b: 2.9 };
+const PAD = { l: 2.3, t: JALAN === "atas" ? 2.9 : 2.1, r: JALAN === "kanan" ? 2.1 : 1.3, b: 2.9 };
 const DINDING = "#2b2b2b";
 const fmtM = (n) => n.toFixed(2).replace(".", ",");
 const halo = 'paint-order="stroke" stroke="#fff" stroke-width="0.08" stroke-linejoin="round"';
@@ -85,7 +85,8 @@ function gambarTangga(r, gaya) {
     out.push(`<polyline points="${r.panah.map((p) => p.join(",")).join(" ")}" fill="none" stroke="#333" stroke-width="0.025" marker-end="url(#panah)"/>`);
     const [x0, y0] = r.panah[0];
     out.push(`<circle cx="${x0}" cy="${y0}" r="0.05" fill="#333"/>`);
-    out.push(`<text x="${x0 - 0.1}" y="${y0 - 0.3}" font-size="0.2" text-anchor="end" fill="#333" ${halo}>NAIK · ${r.jumlah} × ${(r.naik * 100).toFixed(1)} cm</text>`);
+    out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.35}" font-size="0.2" fill="#333" ${halo}>NAIK</text>`);
+    out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.6}" font-size="0.16" fill="#666" ${halo}>${r.jumlah} × ${(r.naik * 100).toFixed(1)} cm</text>`);
   }
   return out.join("");
 }
@@ -178,7 +179,14 @@ export function gambarDenah(svg, state) {
   out.push(garisRantai(ys((r) => sama(r.x + r.w, W)), "v", W + 0.85, W));
 
   // 10. keterangan: arah jalan, judul, skala
-  out.push(`<text x="${W / 2}" y="-2.15" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05">▲ DEPAN · JALAN</text>`);
+  // penunjuk utara (utara = atas gambar)
+  const [ux, uy] = [-1.35, H + 1.6];
+  out.push(`<g transform="translate(${ux} ${uy})"><circle r="0.42" fill="none" stroke="#555" stroke-width="0.02"/>
+    <path d="M0 -0.36L0.14 0.2L0 0.1L-0.14 0.2Z" fill="#333"/>
+    <text y="-0.5" font-size="0.22" font-weight="700" text-anchor="middle" fill="#333">U</text></g>`);
+  out.push(JALAN === "kanan"
+    ? `<text x="${W + 1.7}" y="${H / 2}" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05" transform="rotate(90 ${W + 1.7} ${H / 2})">▲ DEPAN · JALAN (TIMUR)</text>`
+    : `<text x="${W / 2}" y="-2.15" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05">▲ DEPAN · JALAN</text>`);
   out.push(`<text x="${W}" y="${H + 1.85}" font-size="0.34" font-weight="700" text-anchor="end" fill="#222">DENAH LANTAI ${lt}</text>`);
   out.push(`<text x="${W}" y="${H + 2.2}" font-size="0.2" text-anchor="end" fill="#777">${TAHAP[state.tahap].nama} · satuan meter</text>`);
   for (let i = 0; i < 4; i++)
