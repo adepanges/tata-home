@@ -50,6 +50,7 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
 | `js/app.js` | Kontrol UI & ringkasan luas |
 | `js/struktur.js` | Grid, kolom, balok (induk/anak/void/sloof/ring…), analisa dinding di atas pelat, jalur beban & dimensi awal |
 | `js/ringkasanStruktur.js` | Tabel ringkasan & legenda struktur |
+| `docs/catatan-shaft-listrik.md` | Catatan (belum diterapkan): jalur listrik lewat shaft servis, posisi panel |
 
 ## Mengubah denah (`js/data.js`)
 
