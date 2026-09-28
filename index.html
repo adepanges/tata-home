@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Denah Rumah Bertumbuh</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --panel: #fff; --ink: #222; --muted: #777; --line: #ddd;
+    --t1: #f4b860; --t2: #6fb3d9; --t3: #86c77a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 16px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+  h1 { font-size: 20px; margin: 0; }
+  .ctrl { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  input[type=range] { width: 160px; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 16px 16px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-width: 0; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #svg2d { width: 100%; height: auto; display: block; }
+  #view3d { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: #dfe9f1; }
+  .label3d { font-size: 11px; background: rgba(255,255,255,.85); padding: 1px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; margin-top: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; background: var(--c); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; }
+  tr.future td { color: var(--muted); }
+  .seg button { border: 1px solid var(--line); background: #fff; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+  .seg button:first-child { border-radius: 6px 0 0 6px; }
+  .seg button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+  .seg button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .full { grid-column: 1 / -1; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Denah Rumah Bertumbuh</h1>
+  <label class="ctrl">Tahap
+    <input id="tahap" type="range" min="1" max="3" step="1" value="1">
+    <b id="tahapLbl"></b>
+  </label>
+  <label class="ctrl"><input id="ghost" type="checkbox" checked> Tampilkan rencana tahap berikutnya</label>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Denah 2D
+      <span class="seg" id="lantaiSeg">
+        <button data-lantai="1" class="on">Lantai 1</button><button data-lantai="2">Lantai 2</button>
+      </span>
+    </h2>
+    <svg id="svg2d"></svg>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="card">
+    <h2>Model 3D</h2>
+    <div id="view3d"></div>
+    <div class="hint">Drag untuk memutar · scroll untuk zoom · klik kanan + drag untuk geser</div>
+  </section>
+
+  <section class="card full">
+    <h2>Ringkasan per Tahap</h2>
+    <table id="ringkasan"></table>
+  </section>
+</main>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ================== DATA DENAH ==================
+// Satuan meter. x ke kanan, y ke belakang (dari depan lahan).
+// jenis: "ruang" = berdinding penuh, "terbuka" = hanya lantai, "balkon" = lantai + railing
+const LAHAN = { w: 10, h: 12 };
+const TINGGI_LANTAI = 3;
+
+const TAHAP = {
+  1: { nama: "Tahap 1 – Rumah inti",     warna: "#f4b860" },
+  2: { nama: "Tahap 2 – Perluasan samping", warna: "#6fb3d9" },
+  3: { nama: "Tahap 3 – Lantai 2",        warna: "#86c77a" },
+};
+
+const RUANG = [
+  { nama: "Teras",        x: 0, y: 0, w: 4, h: 2, lantai: 1, tahap: 1, jenis: "terbuka" },
+  { nama: "R. Keluarga",  x: 0, y: 2, w: 4, h: 4, lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "K. Tidur 1",   x: 4, y: 2, w: 3, h: 4, lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "Dapur",        x: 0, y: 6, w: 4, h: 3, lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "KM/WC",        x: 4, y: 6, w: 3, h: 3, lantai: 1, tahap: 1, jenis: "ruang" },
+
+  { nama: "Carport",      x: 7, y: 0, w: 3, h: 5, lantai: 1, tahap: 2, jenis: "terbuka" },
+  { nama: "K. Tidur 2",   x: 7, y: 5, w: 3, h: 4, lantai: 1, tahap: 2, jenis: "ruang" },
+
+  { nama: "Balkon",       x: 0, y: 0, w: 4, h: 2, lantai: 2, tahap: 3, jenis: "balkon" },
+  { nama: "K. Tidur Utama", x: 0, y: 2, w: 4, h: 4, lantai: 2, tahap: 3, jenis: "ruang" },
+  { nama: "R. Kerja",     x: 4, y: 2, w: 3, h: 4, lantai: 2, tahap: 3, jenis: "ruang" },
+  { nama: "KM Atas",      x: 4, y: 6, w: 3, h: 3, lantai: 2, tahap: 3, jenis: "ruang" },
+];
+
+// ================== STATE ==================
+const $ = (id) => document.getElementById(id);
+const state = { tahap: 1, lantai: 1, ghost: true };
+const maxTahap = Math.max(...RUANG.map((r) => r.tahap));
+$("tahap").max = maxTahap;
+
+// ================== 2D (SVG) ==================
+const PAD = 1;
+const svg = $("svg2d");
+svg.setAttribute("viewBox", `${-PAD} ${-PAD} ${LAHAN.w + PAD * 2} ${LAHAN.h + PAD * 2}`);
+
+function render2D() {
+  const out = [];
+  // lahan + skala meter
+  out.push(`<rect x="0" y="0" width="${LAHAN.w}" height="${LAHAN.h}" fill="#eef3e6" stroke="#9a9" stroke-width="0.05" stroke-dasharray="0.2 0.15"/>`);
+  for (let i = 0; i <= LAHAN.w; i++)
+    out.push(`<text x="${i}" y="-0.3" font-size="0.3" text-anchor="middle" fill="#999">${i}</text>`);
+  for (let j = 0; j <= LAHAN.h; j++)
+    out.push(`<text x="-0.3" y="${j + 0.1}" font-size="0.3" text-anchor="end" fill="#999">${j}</text>`);
+  out.push(`<text x="${LAHAN.w / 2}" y="${LAHAN.h + 0.7}" font-size="0.35" text-anchor="middle" fill="#999">▲ Depan (jalan) di atas · lahan ${LAHAN.w} × ${LAHAN.h} m</text>`);
+
+  // ruangan lantai lain yang sudah dibangun: siluet tipis sebagai acuan
+  for (const r of RUANG) {
+    if (r.lantai === state.lantai || r.tahap > state.tahap) continue;
+    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="none" stroke="#bbb" stroke-width="0.04"/>`);
+  }
+
+  for (const r of RUANG.filter((r) => r.lantai === state.lantai)) {
+    const built = r.tahap <= state.tahap;
+    if (!built && !state.ghost) continue;
+    const c = TAHAP[r.tahap].warna;
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    const wall = r.jenis === "ruang" ? 0.15 : 0.06;
+    out.push(built
+      ? `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${c}" fill-opacity="${r.jenis === "ruang" ? 0.85 : 0.4}" stroke="#333" stroke-width="${wall}"/>`
+      : `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${c}" fill-opacity="0.12" stroke="${c}" stroke-width="0.06" stroke-dasharray="0.25 0.15"/>`);
+    out.push(`<text x="${cx}" y="${cy - 0.05}" font-size="0.42" text-anchor="middle" fill="${built ? "#222" : "#888"}">${r.nama}</text>`);
+    out.push(`<text x="${cx}" y="${cy + 0.5}" font-size="0.32" text-anchor="middle" fill="${built ? "#555" : "#aaa"}">${r.w}×${r.h} m${built ? "" : " · T" + r.tahap}</text>`);
+  }
+  svg.innerHTML = out.join("");
+}
+
+$("legend").innerHTML = Object.entries(TAHAP)
+  .map(([k, t]) => `<span style="--c:${t.warna}">${t.nama}</span>`).join("");
+
+// ================== RINGKASAN ==================
+function renderRingkasan() {
+  let kum = 0;
+  const rows = Object.entries(TAHAP).map(([k, t]) => {
+    const rs = RUANG.filter((r) => r.tahap === +k);
+    const luas = rs.filter((r) => r.jenis === "ruang").reduce((s, r) => s + r.w * r.h, 0);
+    const luasLain = rs.filter((r) => r.jenis !== "ruang").reduce((s, r) => s + r.w * r.h, 0);
+    kum += luas;
+    return `<tr class="${+k > state.tahap ? "future" : ""}">
+      <td><span style="color:${t.warna}">■</span> ${t.nama}</td>
+      <td>${rs.map((r) => r.nama).join(", ")}</td>
+      <td class="num">${luas} m²</td><td class="num">${luasLain} m²</td><td class="num">${kum} m²</td></tr>`;
+  });
+  $("ringkasan").innerHTML = `<tr><th>Tahap</th><th>Ruangan</th><th class="num">Luas bangunan</th>
+    <th class="num">Teras/carport/balkon</th><th class="num">Kumulatif bangunan</th></tr>` + rows.join("");
+}
+
+// ================== 3D (THREE.JS) ==================
+const host = $("view3d");
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#dfe9f1");
+
+const camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 200);
+camera.position.set(LAHAN.w / 2 + 9, 14, LAHAN.h + 12);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+host.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+Object.assign(labelRenderer.domElement.style, { position: "absolute", top: "0", left: "0", pointerEvents: "none" });
+host.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(LAHAN.w / 2, 2, LAHAN.h / 2);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2.05;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+sun.position.set(-8, 20, -12);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15 });
+sun.target.position.set(LAHAN.w / 2, 0, LAHAN.h / 2);
+scene.add(sun, sun.target);
+
+// tanah + lahan
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ color: "#b9cf9f" }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(LAHAN.w / 2, -0.01, LAHAN.h / 2);
+ground.receiveShadow = true;
+scene.add(ground);
+const lahanEdge = new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(LAHAN.w, 0, LAHAN.h)),
+  new THREE.LineBasicMaterial({ color: "#667" }));
+lahanEdge.position.set(LAHAN.w / 2, 0.02, LAHAN.h / 2);
+scene.add(lahanEdge);
+
+// 2D (x, y) -> 3D (x, z). Depan lahan (y=0) menghadap kamera awal.
+const Z = (y) => LAHAN.h - y;
+const T = 0.15;          // tebal dinding
+const TEBAL_PELAT = 0.12;
+
+function box(w, h, d, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.castShadow = m.receiveShadow = true;
+  return m;
+}
+
+function buatRuang(r) {
+  const g = new THREE.Group();
+  const base = (r.lantai - 1) * TINGGI_LANTAI;
+  const warna = new THREE.Color(TAHAP[r.tahap].warna);
+  const matLantai = new THREE.MeshStandardMaterial({ color: warna.clone().lerp(new THREE.Color("#fff"), 0.3) });
+  const matDinding = new THREE.MeshStandardMaterial({ color: warna, transparent: true, opacity: 1 });
+
+  const pelat = box(r.w, TEBAL_PELAT, r.h, matLantai);
+  pelat.position.set(r.x + r.w / 2, base + TEBAL_PELAT / 2, Z(r.y + r.h / 2));
+  g.add(pelat);
+
+  const tinggi = r.jenis === "ruang" ? TINGGI_LANTAI - TEBAL_PELAT : r.jenis === "balkon" ? 1 : 0;
+  if (tinggi > 0) {
+    const y = base + TEBAL_PELAT + tinggi / 2;
+    const tDinding = r.jenis === "balkon" ? 0.08 : T;
+    // depan & belakang
+    for (const zz of [r.y + tDinding / 2, r.y + r.h - tDinding / 2]) {
+      const w = box(r.w, tinggi, tDinding, matDinding);
+      w.position.set(r.x + r.w / 2, y, Z(zz));
+      g.add(w);
+    }
+    // kiri & kanan
+    for (const xx of [r.x + tDinding / 2, r.x + r.w - tDinding / 2]) {
+      const w = box(tDinding, tinggi, r.h - tDinding * 2, matDinding);
+      w.position.set(xx, y, Z(r.y + r.h / 2));
+      g.add(w);
+    }
+  }
+  // atap datar tipis untuk ruang yang tidak tertutup lantai di atasnya
+  const adaDiAtas = RUANG.some((o) => o.lantai === r.lantai + 1 && o.x === r.x && o.y === r.y && o.tahap <= state.tahap);
+  if (r.jenis === "ruang" && !adaDiAtas) {
+    const atap = box(r.w + 0.3, 0.1, r.h + 0.3, new THREE.MeshStandardMaterial({ color: "#8a6f5a" }));
+    atap.position.set(r.x + r.w / 2, base + TINGGI_LANTAI + 0.05, Z(r.y + r.h / 2));
+    g.add(atap);
+  }
+
+  // label hanya untuk ruangan yang terlihat paling atas, supaya tidak menumpuk
+  if (adaDiAtas) return g;
+  const el = document.createElement("div");
+  el.className = "label3d";
+  el.textContent = r.nama;
+  const label = new CSS2DObject(el);
+  label.position.set(r.x + r.w / 2, base + Math.max(tinggi, 0.3) + 0.4, Z(r.y + r.h / 2));
+  g.add(label);
+  return g;
+}
+
+function jadikanGhost(g) {
+  g.traverse((o) => {
+    if (o.isMesh) {
+      o.material = new THREE.MeshBasicMaterial({ color: o.material.color, transparent: true, opacity: 0.15, depthWrite: false });
+      o.castShadow = false;
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry),
+        new THREE.LineBasicMaterial({ color: o.material.color, transparent: true, opacity: 0.6 }));
+      o.add(edge);
+    }
+    if (o.isCSS2DObject) o.element.style.opacity = 0.45;
+  });
+}
+
+const rumah = new THREE.Group();
+scene.add(rumah);
+let animasi = [];     // { group, start } — ruangan baru "tumbuh" dari tanah
+let tahapSebelumnya = 0;
+
+function render3D() {
+  rumah.traverse((o) => o.isCSS2DObject && o.element.remove());
+  rumah.clear();
+  animasi = [];
+  for (const r of RUANG) {
+    const built = r.tahap <= state.tahap;
+    if (!built && !state.ghost) continue;
+    const g = buatRuang(r);
+    if (!built) jadikanGhost(g);
+    else if (r.tahap > tahapSebelumnya) {
+      g.userData.base = (r.lantai - 1) * TINGGI_LANTAI;
+      animasi.push({ group: g, start: performance.now() });
+    }
+    rumah.add(g);
+  }
+  tahapSebelumnya = state.tahap;
+}
+
+function tumbuh(now) {
+  for (const a of animasi) {
+    const t = Math.min((now - a.start) / 700, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    a.group.scale.y = Math.max(e, 0.001);
+    a.group.position.y = a.group.userData.base * (1 - e);
+  }
+  animasi = animasi.filter((a) => a.group.scale.y < 1);
+}
+
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+}
+new ResizeObserver(resize).observe(host);
+
+renderer.setAnimationLoop((now) => {
+  tumbuh(now);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+
+// ================== KONTROL ==================
+function renderSemua() {
+  $("tahapLbl").textContent = TAHAP[state.tahap].nama;
+  render2D();
+  render3D();
+  renderRingkasan();
+}
+$("tahap").oninput = (e) => { state.tahap = +e.target.value; renderSemua(); };
+$("ghost").onchange = (e) => { state.ghost = e.target.checked; renderSemua(); };
+$("lantaiSeg").onclick = (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.lantai = +b.dataset.lantai;
+  for (const x of $("lantaiSeg").children) x.classList.toggle("on", x === b);
+  render2D();
+};
+renderSemua();
+</script>
+</body>
+</html>
