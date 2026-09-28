@@ -24,7 +24,7 @@ function renderRingkasan() {
       <td class="num">${luas} m²</td><td class="num">${luasLain} m²</td><td class="num">${kum} m²</td></tr>`;
   });
   $("ringkasan").innerHTML = `<tr><th>Tahap</th><th>Ruangan</th><th class="num">Luas bangunan</th>
-    <th class="num">Carport/balkon</th><th class="num">Kumulatif bangunan</th></tr>` + rows.join("");
+    <th class="num">Terbuka (garasi, balkon, rooftop)</th><th class="num">Kumulatif bangunan</th></tr>` + rows.join("");
 }
 
 const svg = $("svg2d");

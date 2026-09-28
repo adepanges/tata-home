@@ -21,6 +21,10 @@ const DEFS = `<defs>
     <rect width="0.5" height="0.5" fill="#efefed"/>
     <circle cx="0.1" cy="0.12" r="0.012" fill="#d3d2cd"/><circle cx="0.36" cy="0.3" r="0.01" fill="#d3d2cd"/>
     <circle cx="0.22" cy="0.42" r="0.008" fill="#d3d2cd"/></pattern>
+  <pattern id="pat-deck" width="1.8" height="0.15" patternUnits="userSpaceOnUse">
+    <rect width="1.8" height="0.15" fill="#dcb68c"/><path d="M0 0H1.8M0 0V0.15" stroke="#b98f63" stroke-width="0.012"/></pattern>
+  <pattern id="pat-rumput" width="0.2" height="0.2" patternUnits="userSpaceOnUse">
+    <rect width="0.2" height="0.2" fill="#cfe3b8"/><path d="M0.05 0.15l0.02-0.06M0.14 0.08l0.02-0.06" stroke="#8fb46a" stroke-width="0.012"/></pattern>
   <marker id="panah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
     <path d="M0 0L10 5L0 10z" fill="#333"/></marker>
 </defs>`;
@@ -91,6 +95,14 @@ function gambarTangga(r, gaya) {
   return out.join("");
 }
 
+// tiang pendopo: 4 sudut + tiang tengah di sisi panjang bila bentang > 4,5 m (masuk 0,4 m dari tepi deck)
+export function tiangPendopo(r, inset = 0.4) {
+  const xs = [r.x + inset, r.x + r.w - inset], ys = [r.y + inset, r.y + r.h - inset];
+  if (r.w > 4.5) xs.splice(1, 0, r.x + r.w / 2);
+  if (r.h > 4.5) ys.splice(1, 0, r.y + r.h / 2);
+  return xs.flatMap((x, i) => ys.filter((_, j) => i === 0 || i === xs.length - 1 || j === 0 || j === ys.length - 1).map((y) => [x, y]));
+}
+
 export function gambarDenah(svg, state) {
   const dibangun = (r) => r.tahap <= state.tahap;
   const { w: W, h: H } = LAHAN;
@@ -105,7 +117,7 @@ export function gambarDenah(svg, state) {
 
   // 1. pola lantai
   for (const r of aktif) {
-    if (r.jenis === "tangga") continue;
+    if (r.jenis === "tangga" || r.jenis === "zona") continue;
     if (r.jenis === "void")
       out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#fff"/>`);
     else out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="url(#pat-${r.finish || "keramik"})"/>`);
@@ -122,6 +134,22 @@ export function gambarDenah(svg, state) {
     out.push(`<path d="M${r.x} ${r.y}L${r.x + r.w} ${r.y + r.h}M${r.x + r.w} ${r.y}L${r.x} ${r.y + r.h}" stroke="#9a9a9a" stroke-width="0.015" stroke-dasharray="0.12 0.08"/>`);
   // 4. furnitur
   for (const r of aktif) for (const p of r.perabot || []) out.push(gambarPerabot(p));
+  // 4b. pendopo: tiang besi + denah atap limasan (garis putus-putus)
+  for (const r of aktif.filter((r) => r.jenis === "pendopo")) {
+    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="none" stroke="#8a6a48" stroke-width="0.03"/>`);
+    for (const [kx, ky] of tiangPendopo(r)) out.push(`<rect x="${kx - 0.1}" y="${ky - 0.1}" width="0.2" height="0.2" fill="#222"/>`);
+    const o = 0.2, x0 = r.x - o, y0 = r.y - o, x1 = r.x + r.w + o, y1 = r.y + r.h + o, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    const [p, q] = r.h >= r.w ? [[cx, y0 + (x1 - x0) / 2], [cx, y1 - (x1 - x0) / 2]] : [[x0 + (y1 - y0) / 2, cy], [x1 - (y1 - y0) / 2, cy]];
+    const s = 'fill="none" stroke="#b5532e" stroke-width="0.02" stroke-dasharray="0.15 0.08"';
+    out.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" ${s}/>`);
+    const [a, b] = r.h >= r.w ? [p, q] : [p, q];
+    out.push(`<path d="M${x0} ${y0}L${a[0]} ${a[1]}L${x1} ${y0}M${a[0]} ${a[1]}L${b[0]} ${b[1]}M${x0} ${y1}L${b[0]} ${b[1]}L${x1} ${y1}" ${s}/>`);
+  }
+  // 4c. zona instalasi: garis putus-putus + label kecil
+  for (const r of aktif.filter((r) => r.jenis === "zona")) {
+    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="0.08" fill="none" stroke="#4a78b8" stroke-width="0.02" stroke-dasharray="0.1 0.06"/>`);
+    out.push(`<text x="${r.x + 0.08}" y="${r.y - 0.06}" font-size="0.17" font-weight="600" fill="#2f5d86" ${halo}>${r.nama.toUpperCase()}</text>`);
+  }
   // 5. dinding, railing, bukaan
   const m = modelDinding(RUANG, BUKAAN, lt, dibangun);
   const t2 = TEBAL_DINDING / 2;
@@ -133,6 +161,10 @@ export function gambarDenah(svg, state) {
     out.push(r.o === "h"
       ? `<rect x="${r.a}" y="${r.pos - 0.03}" width="${r.b - r.a}" height="0.06" fill="#fff" stroke="${DINDING}" stroke-width="0.015"/>`
       : `<rect x="${r.pos - 0.03}" y="${r.a}" width="0.06" height="${r.b - r.a}" fill="#fff" stroke="${DINDING}" stroke-width="0.015"/>`);
+  for (const r of m.parapet)
+    out.push(r.o === "h"
+      ? `<rect x="${r.a}" y="${r.pos - t2}" width="${r.b - r.a}" height="${TEBAL_DINDING}" fill="#9a9a9a" stroke="${DINDING}" stroke-width="0.015"/>`
+      : `<rect x="${r.pos - t2}" y="${r.a}" width="${TEBAL_DINDING}" height="${r.b - r.a}" fill="#9a9a9a" stroke="${DINDING}" stroke-width="0.015"/>`);
   for (const b of m.bukaan) out.push(gambarBukaan(b));
   // kolom carport bila tertutup lantai atas
   if (lt === 1)
@@ -142,20 +174,20 @@ export function gambarDenah(svg, state) {
 
   // 6. rencana tahap berikutnya
   for (const r of rencana) {
-    if (r.jenis === "tangga") continue;
+    if (r.jenis === "tangga" || r.jenis === "zona") continue;
     const c = TAHAP[r.tahap].warna;
     out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${c}" fill-opacity="0.07" stroke="${c}" stroke-width="0.04" stroke-dasharray="0.2 0.12"/>`);
   }
   // 7. penanda void di atas (lantai 1)
   if (lt === 1)
-    for (const v of RUANG.filter((r) => r.jenis === "void" && (dibangun(r) || state.ghost))) {
+    for (const v of RUANG.filter((r) => r.jenis === "void" && r.lantai === lt + 1 && (dibangun(r) || state.ghost))) {
       out.push(`<rect x="${v.x + 0.12}" y="${v.y + 0.12}" width="${v.w - 0.24}" height="${v.h - 0.24}" fill="none" stroke="#666" stroke-width="0.015" stroke-dasharray="0.15 0.08"/>`);
       out.push(`<text x="${v.x + 0.25}" y="${v.y + v.h - 0.25}" font-size="0.2" fill="#555" ${halo}>VOID DI ATAS</text>`);
     }
 
   // 8. label ruang
   for (const r of [...aktif, ...rencana]) {
-    if (r.jenis === "tangga" || r.label === false) continue;
+    if (r.jenis === "tangga" || r.jenis === "zona" || r.label === false) continue;
     const built = dibangun(r);
     const [lx, ly] = r.label || [r.x + r.w / 2, r.y + r.h / 2];
     const nama = r.jenis === "void" ? "VOID" : r.nama.toUpperCase();
@@ -168,7 +200,7 @@ export function gambarDenah(svg, state) {
 
   // 9. garis ukuran
   // tiap sisi: rantai ukuran ruangan yang menempel di sisi itu + ukuran total
-  const dim = ruangLt.filter((r) => r.jenis !== "tangga" && (dibangun(r) || state.ghost));
+  const dim = ruangLt.filter((r) => !["tangga", "zona", "pendopo"].includes(r.jenis) && (dibangun(r) || state.ghost));
   const sama = (a, b) => Math.abs(a - b) < 1e-6;
   const xs = (f) => [0, W, ...dim.filter(f).flatMap((r) => [r.x, r.x + r.w])];
   const ys = (f) => [0, H, ...dim.filter(f).flatMap((r) => [r.y, r.y + r.h])];
@@ -188,7 +220,7 @@ export function gambarDenah(svg, state) {
   out.push(JALAN === "kanan"
     ? `<text x="${W + 1.7}" y="${H / 2}" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05" transform="rotate(90 ${W + 1.7} ${H / 2})">▲ DEPAN · JALAN (TIMUR)</text>`
     : `<text x="${W / 2}" y="-2.15" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05">▲ DEPAN · JALAN</text>`);
-  out.push(`<text x="${W}" y="${H + 1.85}" font-size="0.34" font-weight="700" text-anchor="end" fill="#222">DENAH LANTAI ${lt}</text>`);
+  out.push(`<text x="${W}" y="${H + 1.85}" font-size="0.34" font-weight="700" text-anchor="end" fill="#222">${lt === 3 ? "DENAH ROOFTOP (LANTAI 3)" : "DENAH LANTAI " + lt}</text>`);
   out.push(`<text x="${W}" y="${H + 2.2}" font-size="0.2" text-anchor="end" fill="#777">${TAHAP[state.tahap].nama} · satuan meter</text>`);
   for (let i = 0; i < 4; i++)
     out.push(`<rect x="${i}" y="${H + 1.6}" width="1" height="0.1" fill="${i % 2 ? "#fff" : "#333"}" stroke="#333" stroke-width="0.012"/>`,

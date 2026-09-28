@@ -8,6 +8,9 @@
 //   "tangga"  = tangga; bentuk & anak tangganya dihitung oleh tanggaL()
 //   "mezanin" = lantai atas di tepi void: railing di sisi yang menghadap void
 //   "void"    = lubang tembus 2 lantai: tanpa pelat lantai, dinding luar + atap
+//   "rooftop" = lantai atap terbuka, dikelilingi tembok parapet (TINGGI_PARAPET)
+//   "pendopo" = paviliun terbuka: deck kayu, tiang, atap limasan
+//   "zona"    = penanda area (instalasi, jemuran) — hanya garis & label, isinya lewat perabot
 // RUANG.finish : pola lantai di denah — "keramik" | "parket" | "basah" | "beton"
 // RUANG.perabot: [tipe, cx, cy, rotasi°, w?, h?]  (titik tengah, lihat simbol.js)
 // RUANG.label  : [x, y] posisi label (opsional, default tengah ruangan; false = tanpa label)
@@ -20,10 +23,12 @@ export const JALAN = "kanan";           // "atas" | "kanan" — sisi lahan yang 
 export const TINGGI_LANTAI = 3;
 export const TEBAL_PELAT = 0.12;
 export const TEBAL_DINDING = 0.15;
+export const TINGGI_PARAPET = 1.3;
 
 export const TAHAP = {
   1: { nama: "Tahap 1 – Lantai 1",          warna: "#e8a33d" },
   2: { nama: "Tahap 2 – Tangga + Lantai 2", warna: "#4f9d5a" },
+  3: { nama: "Tahap 3 – Rooftop",           warna: "#4a78b8" },
 };
 
 // Void di pojok kiri-atas living room (ganti ke 3 untuk void 3×3); tangga L ada di dalamnya
@@ -64,6 +69,25 @@ export function tanggaL(v, { transpose = false, flipX = false, flipY = false } =
     panah: [[x0 + 0.1, bordes.y + c], [bordes.x + c, bordes.y + c], [bordes.x + c, 0.1]].map(titik),
   };
 }
+
+// Tangga lurus di dalam persegi v, naik ke arah `arah` ("+x" | "-x" | "+y" | "-y").
+export function tanggaLurus(v, arah = "-x", optrede = 0.175) {
+  const N = Math.round(TINGGI_LANTAI / optrede), naik = TINGGI_LANTAI / N, n = N - 1;
+  const horiz = arah.endsWith("x"), neg = arah.startsWith("-");
+  const len = horiz ? v.w : v.h, d = len / n;
+  const anak = [];
+  for (let i = 1; i <= n; i++) {
+    const off = neg ? len - i * d : (i - 1) * d;
+    anak.push(horiz ? { x: v.x + off, y: v.y, w: d, h: v.h, top: i * naik }
+                    : { x: v.x, y: v.y + off, w: v.w, h: d, top: i * naik });
+  }
+  const c = horiz ? v.y + v.h / 2 : v.x + v.w / 2;
+  const [a0, a1] = neg ? [len - 0.1, 0.1] : [0.1, len - 0.1];
+  const panah = horiz ? [[v.x + a0, c], [v.x + a1, c]] : [[c, v.y + a0], [c, v.y + a1]];
+  return { anak, jumlah: N, naik, panah };
+}
+
+const TANGGA_ATAS = { x: 0, y: 3, w: 4, h: 1 };  // tangga ke rooftop, melayang di sisi selatan void
 
 export const RUANG = [
   // ---- Tahap 1, lantai 1 (full 12 × 10 m) ----
@@ -133,6 +157,36 @@ export const RUANG = [
   { nama: "KM", x: 5, y: 5, w: 1.8, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
     label: [5.55, 6.1],
     perabot: [["kloset", 5.4, 7.05, 180], ["shower", 6.3, 7.0, 0], ["wastafel", 6.55, 5.6, 90]] },
+
+  // ---- Tahap 3: tangga ke rooftop + lantai 3 (rooftop terbuka, tanpa kamar) ----
+  // tangga lurus berangkat dari dapur kering (sebelah tempat tangga bawah tiba), naik ke barat
+  { nama: "Tangga Rooftop", ...TANGGA_ATAS, lantai: 2, tahap: 3, jenis: "tangga", ...tanggaLurus(TANGGA_ATAS, "-x") },
+  // rumah tangga 4 × 2 m (lubang tangga + bordes), beratap supaya hujan tidak masuk
+  { nama: "Lubang Tangga", ...TANGGA_ATAS, lantai: 3, tahap: 3, jenis: "void", grup: "r-tangga", label: false },
+  { nama: "R. Tangga", x: 0, y: 2, w: 4, h: 1, lantai: 3, tahap: 3, jenis: "ruang", grup: "r-tangga", finish: "keramik",
+    label: [2.4, 2.45] },
+  // lantai rooftop, dikelilingi tembok parapet 130 cm
+  { nama: "Rooftop", x: 0, y: 0, w: 12, h: 2, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton",
+    label: [2.0, 1.0] },
+  { nama: "Rooftop", x: 4, y: 2, w: 8, h: 2, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
+  { nama: "Rooftop", x: 0, y: 4, w: 12, h: 6, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false,
+    perabot: [["pot", 4.55, 5.2, 0], ["pot", 4.55, 9.35, 0], ["pot", 11.45, 1.9, 0]] },
+  // pendopo di tengah untuk berkumpul: deck kayu, tiang besi, atap limasan genteng
+  { nama: "Pendopo", x: 5, y: 1.5, w: 6, h: 8, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
+    label: [8, 2.25],
+    perabot: [["sofa", 8, 3.45, 0], ["sofa", 8, 6.15, 180], ["kursi", 9.6, 4.8, 90], ["kursi", 6.4, 4.8, 270],
+              ["mejaTamu", 8, 4.8, 0, 1.2, 0.6], ["mejaMakan", 8, 8.3, 0]] },
+  // zona instalasi
+  { nama: "Air Panas", x: 0.3, y: 4.3, w: 3.5, h: 1.7, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["pemanasAir", 2.05, 5.2, 0]] },
+  { nama: "Jemuran", x: 0.3, y: 6.2, w: 3.5, h: 0.9, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["jemuran", 2.05, 6.7, 0, 3.2, 0.6]] },
+  { nama: "Instalasi Air", x: 0.3, y: 7.3, w: 3.5, h: 2.4, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["tandon", 1.0, 8.55, 0], ["tandon", 2.3, 8.55, 0], ["pompa", 3.35, 9.3, 0]] },
+  { nama: "AC Outdoor", x: 11.15, y: 4.3, w: 0.75, h: 5.3, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["acOutdoor", 11.55, 5.2, 90], ["acOutdoor", 11.55, 6.4, 90], ["acOutdoor", 11.55, 7.6, 90], ["acOutdoor", 11.55, 8.8, 90]] },
+  { nama: "Antena & Komunikasi", x: 8.4, y: 0.15, w: 3.45, h: 1.2, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["parabola", 9.7, 0.75, 0], ["antena", 11.3, 0.75, 0]] },
 ].filter((r) => r.w > 0 && r.h > 0);
 
 // ================== PINTU & JENDELA ==================
@@ -172,7 +226,9 @@ export const BUKAAN = [
   { lantai: 2, tipe: "boven",   garis: "h", pos: 10,   a: 6.0, b: 6.6 },
   { lantai: 2, tipe: "jendela", garis: "v", pos: 0,    a: 7.8, b: 9.2 },
   { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 2.9, b: 4.1 },
-  { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.5, b: 3.5 },  // cahaya ke void
+  { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.5, b: 2.8 },  // cahaya ke void
+  // lantai 3
+  { lantai: 3, tipe: "pintu",   garis: "v", pos: 4,    a: 2.1, b: 2.9, engsel: "a", buka: +1 },  // rumah tangga
   { lantai: 2, tipe: "jendelaTinggi", garis: "h", pos: 0, a: 0.5, b: 3.5 },
 ];
 
@@ -182,4 +238,5 @@ export const TINGGI_BUKAAN = {
 };
 
 export const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan
-export const TIDAK_DIHITUNG = ["void", "tangga"];     // void bukan lantai; tangga di dalam ruang lain
+// void bukan lantai; tangga di dalam ruang lain; pendopo & zona sudah termasuk luas rooftop
+export const TIDAK_DIHITUNG = ["void", "tangga", "pendopo", "zona"];

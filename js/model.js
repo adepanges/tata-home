@@ -6,16 +6,20 @@ import { TEBAL_DINDING } from "./data.js";
 const EPS = 1e-6;
 const sama = (a, b) => Math.abs(a - b) < 1e-6;
 
-export const BERDINDING = ["ruang", "balkon", "mezanin", "void"];
+export const BERDINDING = ["ruang", "balkon", "mezanin", "void", "rooftop"];
 
 export const overlap = (a, b) =>
   a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
 
-// Railing dibuka di titik tangga tiba (anak tangga teratas menempel sisi ini)
-function diUjungTangga(ruang, dibangun, o, pos, m) {
+// Railing dibuka di ujung tangga: anak tangga teratas dari tangga lantai bawah,
+// atau anak tangga terbawah dari tangga yang berangkat dari lantai ini.
+function diUjungTangga(ruang, dibangun, lantai, o, pos, m) {
   return ruang.some((t) => {
     if (t.jenis !== "tangga" || !dibangun(t)) return false;
-    const a = t.anak[t.anak.length - 1];
+    let a;
+    if (t.lantai === lantai - 1) a = t.anak[t.anak.length - 1];
+    else if (t.lantai === lantai) a = t.anak[0];
+    else return false;
     return o === "h"
       ? m > a.x && m < a.x + a.w && (sama(a.y, pos) || sama(a.y + a.h, pos))
       : m > a.y && m < a.y + a.h && (sama(a.x, pos) || sama(a.x + a.w, pos));
@@ -39,14 +43,14 @@ export function segmenSisi(ruang, dibangun, r) {
     let cur = null;
     for (let t = s.a; t < s.b - EPS; t += STEP) {
       const m = t + STEP / 2;
-      let kind = r.jenis === "balkon" ? "rail" : "wall";
+      let kind = r.jenis === "balkon" ? "rail" : r.jenis === "rooftop" ? "parapet" : "wall";
       if (terbukaKe.includes(r.jenis) || r.grup) {
         const n = tetangga.find((o) => s.o === "h"
           ? m > o.x && m < o.x + o.w && (sama(o.y, s.pos) || sama(o.y + o.h, s.pos))
           : m > o.y && m < o.y + o.h && (sama(o.x, s.pos) || sama(o.x + o.w, s.pos)));
         if (n && r.grup && n.grup === r.grup) kind = "none";
         else if (n && !terbukaKe.includes(r.jenis)) kind = "wall";
-        else if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(ruang, dibangun, s.o, s.pos, m)
+        else if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(ruang, dibangun, r.lantai, s.o, s.pos, m)
           ? "rail" : "none";
       }
       const b = Math.min(t + STEP, s.b);
@@ -77,7 +81,7 @@ function kurangi(iv, potong) {
   return hasil;
 }
 
-// Hasil: { dinding: [{o,pos,a,b,tahap}], railing: [...], bukaan: [{...bukaan, tahap}] }
+// Hasil: { dinding: [{o,pos,a,b,tahap}], railing: [...], parapet: [...], bukaan: [{...bukaan, tahap}] }
 // Dinding sudah diperpanjang setengah tebal di ujungnya supaya sudut tersambung rapi.
 export function modelDinding(ruang, semuaBukaan, lantai, dibangun) {
   const garis = new Map();
@@ -85,16 +89,18 @@ export function modelDinding(ruang, semuaBukaan, lantai, dibangun) {
     if (r.lantai !== lantai || !dibangun(r) || !BERDINDING.includes(r.jenis)) continue;
     for (const s of segmenSisi(ruang, dibangun, r)) {
       const key = `${s.o}|${s.pos.toFixed(3)}`;
-      if (!garis.has(key)) garis.set(key, { o: s.o, pos: s.pos, wall: [], rail: [] });
+      if (!garis.has(key)) garis.set(key, { o: s.o, pos: s.pos, wall: [], rail: [], parapet: [] });
       garis.get(key)[s.kind].push({ a: s.a, b: s.b, tahap: r.tahap });
     }
   }
   const t2 = TEBAL_DINDING / 2;
-  const out = { dinding: [], railing: [], bukaan: [] };
+  const out = { dinding: [], railing: [], parapet: [], bukaan: [] };
   const bukaanLantai = semuaBukaan.filter((b) => b.lantai === lantai);
   for (const g of garis.values()) {
     const semua = gabung(g.wall);
     for (const r of kurangi(gabung(g.rail), semua)) out.railing.push({ o: g.o, pos: g.pos, ...r });
+    for (const r of kurangi(gabung(g.parapet).map((p) => ({ ...p, a: p.a - t2, b: p.b + t2 })), semua))
+      out.parapet.push({ o: g.o, pos: g.pos, ...r });
     const disini = bukaanLantai.filter((b) => b.garis === g.o && sama(b.pos, g.pos) &&
       semua.some((w) => b.a < w.b - EPS && b.b > w.a + EPS));
     for (const b of disini) {

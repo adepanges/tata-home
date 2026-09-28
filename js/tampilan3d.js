@@ -3,13 +3,14 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN, TINGGI_PARAPET } from "./data.js";
+import { tiangPendopo } from "./denah2d.js";
 import { modelDinding, overlap } from "./model.js";
 
 // 2D (x, y) -> 3D (x, z). Dilihat dari atas, sumbu 3D sama persis dengan denah
 // (x ke kanan, z ke bawah gambar), jadi model tidak tercermin.
 const Z = (y) => y;
-const WARNA_FINISH = { keramik: "#f1ede5", parket: "#d9bf94", basah: "#dde7ea", beton: "#cfcdc8" };
+const WARNA_FINISH = { keramik: "#f1ede5", parket: "#d9bf94", basah: "#dde7ea", beton: "#cfcdc8", deck: "#b98553", rumput: "#6aa84f" };
 // kamera awal memandang dari arah jalan
 const KAMERA_AWAL = JALAN === "kanan" ? [LAHAN.w + 11, 13, LAHAN.h + 7] : [LAHAN.w / 2 + 9, 14, -12];
 const KAMERA_ATAS = JALAN === "kanan" ? [LAHAN.w + 5, 20, LAHAN.h + 3] : [LAHAN.w / 2 + 4, 20, -7];
@@ -101,7 +102,105 @@ export function buat3D(host) {
     kabin.position.set(0, 1.25, 0.2);
     g.add(bodi, kabin);
     g.position.set(x, 0, Z(y));
-    g.rotation.y = (rot * Math.PI) / 180;
+    g.rotation.y = (-rot * Math.PI) / 180;
+    return g;
+  }
+
+  // ---- pendopo: deck kayu ditinggikan, tiang besi hitam, atap limasan genteng ----
+  const matPendopo = {
+    deck: new THREE.MeshStandardMaterial({ color: "#b98553" }),
+    tiang: new THREE.MeshStandardMaterial({ color: "#232323", roughness: 0.6 }),
+    genteng: new THREE.MeshStandardMaterial({ color: "#c8643b", side: THREE.DoubleSide, flatShading: true }),
+    plafon: new THREE.MeshStandardMaterial({ color: "#8a5a36", side: THREE.DoubleSide }),
+  };
+  function atapLimasan(w, d, tinggi) {
+    // bubungan di sumbu yang lebih panjang; 4 bidang miring
+    const [hw, hd] = [w / 2, d / 2];
+    const panjangX = w >= d, r = panjangX ? (w - d) / 2 : (d - w) / 2;
+    const r1 = panjangX ? [-r, tinggi, 0] : [0, tinggi, -r], r2 = panjangX ? [r, tinggi, 0] : [0, tinggi, r];
+    const A = [-hw, 0, -hd], B = [hw, 0, -hd], C = [hw, 0, hd], D = [-hw, 0, hd];
+    const tri = panjangX
+      ? [A, B, r2, A, r2, r1, D, r1, r2, D, r2, C, A, r1, D, B, C, r2]
+      : [A, B, r1, B, C, r2, B, r2, r1, C, D, r2, D, A, r1, D, r1, r2];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(tri.flat(), 3));
+    geo.computeVertexNormals();
+    return geo;
+  }
+  function buatPendopo(r, y0) {
+    const g = new THREE.Group();
+    const cx = r.x + r.w / 2, cz = Z(r.y + r.h / 2), tDeck = 0.2, tTiang = 2.7;
+    const deck = box(r.w, tDeck, r.h, matPendopo.deck);
+    deck.position.set(cx, y0 + tDeck / 2, cz);
+    g.add(deck);
+    for (const [kx, ky] of tiangPendopo(r)) {
+      const t = box(0.2, tTiang, 0.2, matPendopo.tiang);
+      t.position.set(kx, y0 + tDeck + tTiang / 2, Z(ky));
+      g.add(t);
+    }
+    const yAtap = y0 + tDeck + tTiang;
+    // balok keliling
+    const bw = r.w - 0.6, bd = r.h - 0.6;
+    for (const [w, d, x, z] of [[bw, 0.15, cx, Z(r.y + 0.4)], [bw, 0.15, cx, Z(r.y + r.h - 0.4)], [0.15, bd, r.x + 0.4, cz], [0.15, bd, r.x + r.w - 0.4, cz]]) {
+      const b = box(w, 0.2, d, matPendopo.tiang);
+      b.position.set(x, yAtap - 0.1, z);
+      g.add(b);
+    }
+    const o = 0.2, atap = new THREE.Mesh(atapLimasan(r.w + 2 * o, r.h + 2 * o, 2.0), matPendopo.genteng);
+    atap.position.set(cx, yAtap, cz);
+    atap.castShadow = true;
+    g.add(atap);
+    return g;
+  }
+
+  // ---- peralatan rooftop & perabot 3D sederhana ----
+  const matAlat = {
+    tandon: new THREE.MeshStandardMaterial({ color: "#2f6fb0" }),
+    putih: new THREE.MeshStandardMaterial({ color: "#eeeeee" }),
+    panel: new THREE.MeshStandardMaterial({ color: "#1f3550", roughness: 0.3 }),
+    logam: new THREE.MeshStandardMaterial({ color: "#777", metalness: 0.5, roughness: 0.4 }),
+    pot: new THREE.MeshStandardMaterial({ color: "#b8643a" }),
+    daun: new THREE.MeshStandardMaterial({ color: "#5d8f3e" }),
+    rotan: new THREE.MeshStandardMaterial({ color: "#3b3530" }),
+  };
+  function perabot3D([tipe, x, y, rot = 0, w, h], y0) {
+    const g = new THREE.Group();
+    const add = (m, px, py, pz) => { m.position.set(px, py, pz); m.castShadow = true; g.add(m); return m; };
+    const cyl = (r, h, mat) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), mat);
+    switch (tipe) {
+      case "tandon": add(cyl(0.55, 1.3, matAlat.tandon), 0, 0.65, 0); add(cyl(0.2, 0.08, matAlat.tandon), 0, 1.34, 0); break;
+      case "pompa": add(box(0.5, 0.35, 0.4, matAlat.logam), 0, 0.18, 0); break;
+      case "pemanasAir": {
+        const panel = add(box(2.0, 0.05, 1.0, matAlat.panel), 0, 0.55, 0.1);
+        panel.rotation.x = -0.35;
+        const t = add(cyl(0.2, 2.0, matAlat.putih), 0, 0.95, -0.45);
+        t.rotation.z = Math.PI / 2;
+        break;
+      }
+      case "acOutdoor": add(box(0.8, 0.55, 0.3, matAlat.putih), 0, 0.35, 0); break;
+      case "antena": {
+        add(cyl(0.035, 5, matAlat.logam), 0, 2.5, 0);
+        for (const [hh, len] of [[3.6, 1.4], [4.1, 1.1], [4.5, 0.8]]) add(box(len, 0.03, 0.03, matAlat.logam), 0, hh, 0);
+        add(new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.4, 8), matAlat.logam), 0, 5.2, 0);  // penangkal petir
+        break;
+      }
+      case "parabola": {
+        add(cyl(0.04, 1.0, matAlat.logam), 0, 0.5, 0);
+        const dish = add(new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 10, 0, Math.PI * 2, 0, Math.PI / 3),
+          new THREE.MeshStandardMaterial({ color: "#dddddd", side: THREE.DoubleSide })), 0, 1.25, 0);
+        dish.rotation.x = Math.PI * 0.75;
+        break;
+      }
+      case "pot": add(cyl(0.25, 0.45, matAlat.pot), 0, 0.22, 0); add(new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 8), matAlat.daun), 0, 0.85, 0); break;
+      case "jemuran": for (const px of [-(w ?? 3.2) / 2 + 0.05, (w ?? 3.2) / 2 - 0.05]) add(box(0.05, 1.6, 0.05, matAlat.logam), px, 0.8, 0); break;
+      case "sofa": add(box(w ?? 2.2, 0.45, h ?? 0.9, matAlat.rotan), 0, 0.22, 0); add(box(w ?? 2.2, 0.4, 0.2, matAlat.rotan), 0, 0.65, -((h ?? 0.9) / 2) + 0.1); break;
+      case "kursi": add(box(w ?? 0.5, 0.45, h ?? 0.5, matAlat.rotan), 0, 0.22, 0); break;
+      case "mejaTamu": add(box(w ?? 1.0, 0.4, h ?? 0.5, matAlat.rotan), 0, 0.2, 0); break;
+      case "mejaMakan": add(cyl(0.55, 0.75, matAlat.rotan), 0, 0.37, 0); break;
+      default: return null;
+    }
+    g.position.set(x, y0, Z(y));
+    g.rotation.y = (-rot * Math.PI) / 180;
     return g;
   }
 
@@ -133,7 +232,7 @@ export function buat3D(host) {
     const grup = new Map();
     const tinggiDinding = TINGGI_LANTAI - TEBAL_PELAT;
 
-    for (const lantai of [1, 2]) {
+    for (const lantai of [1, 2, 3]) {
       const base = (lantai - 1) * TINGGI_LANTAI;
       const m = modelDinding(RUANG, BUKAAN, lantai, dibangun);
       const matDinding = (tahap) => (state.warnaTahap ? matTahap[tahap] : mat.plester);
@@ -158,6 +257,8 @@ export function buat3D(host) {
           g.add(daun);
         }
       }
+      for (const r of m.parapet)
+        grupUntuk(grup, r.tahap, lantai).add(potongDinding(r.o, r.pos, r.a, r.b, base, 0, TINGGI_PARAPET, mat.plester));
       for (const r of m.railing) {
         const g = grupUntuk(grup, r.tahap, lantai);
         g.add(potongDinding(r.o, r.pos, r.a, r.b, base, 0.95, 1.0, mat.railing, 0.05));
@@ -172,7 +273,9 @@ export function buat3D(host) {
       const cx = r.x + r.w / 2, cz = Z(r.y + r.h / 2);
 
       if (!built) {  // rencana: volume transparan
-        const tinggi = r.jenis === "terbuka" ? 0.1 : r.jenis === "tangga" ? TINGGI_LANTAI : TINGGI_LANTAI - 0.02;
+        if (r.jenis === "zona") continue;
+        const tinggi = r.jenis === "terbuka" ? 0.1 : r.jenis === "rooftop" ? TINGGI_PARAPET
+          : r.jenis === "tangga" && r.lantai === 1 ? TINGGI_LANTAI : r.jenis === "tangga" ? 0.2 : TINGGI_LANTAI - 0.02;
         const c = new THREE.Color(TAHAP[r.tahap].warna);
         const v = new THREE.Mesh(new THREE.BoxGeometry(r.w, tinggi, r.h),
           new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.12, depthWrite: false }));
@@ -188,10 +291,21 @@ export function buat3D(host) {
       const g = grupUntuk(grup, r.tahap, r.lantai);
       if (r.jenis === "tangga") {
         for (const a of r.anak) {
-          const st = box(a.w, a.top, a.h, mat.tangga);
-          st.position.set(a.x + a.w / 2, a.top / 2, Z(a.y + a.h / 2));
+          // lantai 1: anak tangga masif dari tanah; lantai atas: anak tangga melayang (pelat 20 cm)
+          const tebal = r.lantai === 1 ? a.top : 0.2;
+          const st = box(a.w, tebal, a.h, mat.tangga);
+          st.position.set(a.x + a.w / 2, base + a.top - tebal / 2, Z(a.y + a.h / 2));
           g.add(st);
         }
+        continue;
+      }
+      if (r.jenis === "zona") {
+        for (const p of r.perabot || []) { const o = perabot3D(p, base + TEBAL_PELAT); if (o) g.add(o); }
+        continue;
+      }
+      if (r.jenis === "pendopo") {
+        g.add(buatPendopo(r, base + TEBAL_PELAT));
+        g.add(label(r.nama, cx, base + TEBAL_PELAT + 5.2, cz));
         continue;
       }
       if (r.jenis !== "void") {
@@ -213,10 +327,13 @@ export function buat3D(host) {
           g.add(k);
         }
       }
-      for (const [tipe, x, y, rot = 0] of r.perabot || [])
+      for (const p of r.perabot || []) {
+        const [tipe, x, y, rot = 0] = p;
         if (tipe === "mobil") g.add(buatMobil(x, y, rot));
+        else { const o = perabot3D(p, base + TEBAL_PELAT); if (o) g.add(o); }
+      }
       if (!diAtas.length && r.label !== false) {
-        const t = r.jenis === "terbuka" ? 0.3 : TINGGI_LANTAI;
+        const t = r.jenis === "terbuka" ? 0.3 : r.jenis === "rooftop" ? TINGGI_PARAPET : TINGGI_LANTAI;
         g.add(label(r.nama, cx, base + t + 0.4, cz));
       }
     }

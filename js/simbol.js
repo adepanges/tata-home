@@ -49,6 +49,27 @@ export const SIMBOL = {
     path(`M0 0L${w} ${h}M${w} 0L0 ${h}`) + circ(w / 2, h / 2, 0.04, G) },
   mesinCuci: { w: 0.6, h: 0.6, gambar: (w, h) => rect(0, 0, w, h, 0.03) + rect(0.04, 0.03, w - 0.08, 0.09, 0.01, T) +
     circ(w / 2, h / 2 + 0.05, 0.2, T) + circ(w / 2, h / 2 + 0.05, 0.12, T) },
+  // ---- instalasi rooftop ----
+  tandon: { w: 1.1, h: 1.1, gambar: (w) => circ(w / 2, w / 2, w / 2, 'stroke="#2f5d86" stroke-width="0.025" fill="#e6f0f7"') +
+    circ(w / 2, w / 2, w / 2 - 0.12, 'stroke="#2f5d86" stroke-width="0.012" fill="none"') +
+    `<text x="${w / 2}" y="${w / 2 + 0.07}" font-size="0.17" text-anchor="middle" fill="#2f5d86">1000 L</text>` },
+  pompa: { w: 0.5, h: 0.4, gambar: (w, h) => rect(0, 0, w, h, 0.03) + circ(w * 0.35, h / 2, 0.12, T) +
+    `<text x="${w * 0.78}" y="${h / 2 + 0.06}" font-size="0.14" text-anchor="middle" fill="#555">P</text>` },
+  pemanasAir: { w: 2.0, h: 1.3, gambar: (w, h) => {
+    let s = rect(0, 0.35, w, h - 0.35, 0.02, 'stroke="#333" stroke-width="0.02" fill="#dfe8f2"');
+    for (let i = 1; i < 8; i++) s += path(`M${(i * w) / 8} 0.35V${h}`, 'stroke="#8aa3bd" stroke-width="0.012" fill="none"');
+    return s + rect(0, 0, w, 0.3, 0.15, 'stroke="#333" stroke-width="0.02" fill="#f2f2f2"');  // tangki di atas panel
+  } },
+  jemuran: { w: 3.2, h: 0.6, gambar: (w, h) => rect(0, 0, 0.08, h, 0, 'fill="#555"') + rect(w - 0.08, 0, 0.08, h, 0, 'fill="#555"') +
+    [0.15, 0.3, 0.45].map((y) => path(`M0.08 ${y}H${w - 0.08}`, 'stroke="#777" stroke-width="0.012" stroke-dasharray="0.08 0.04" fill="none"')).join("") },
+  acOutdoor: { w: 0.8, h: 0.3, gambar: (w, h) => rect(0, 0, w, h, 0.02) + circ(w * 0.38, h / 2, 0.11, T) + path(`M${w * 0.72} 0.05V${h - 0.05}`) },
+  antena: { w: 0.6, h: 0.6, gambar: (w) => circ(w / 2, w / 2, 0.08, 'fill="#333"') +
+    path(`M0 ${w / 2}H${w}M${w / 2} 0V${w}M0.08 0.08L${w - 0.08} ${w - 0.08}`, 'stroke="#333" stroke-width="0.02" fill="none"') +
+    circ(w / 2, w / 2, w / 2, 'stroke="#c33" stroke-width="0.012" stroke-dasharray="0.04 0.03" fill="none"') },
+  parabola: { w: 0.9, h: 0.9, gambar: (w) => circ(w / 2, w / 2, w / 2, 'stroke="#333" stroke-width="0.02" fill="#f4f4f4"') +
+    circ(w / 2, w / 2, 0.06, 'fill="#333"') + path(`M${w / 2} ${w / 2}L${w - 0.1} 0.1`, 'stroke="#333" stroke-width="0.015" fill="none"') },
+  pot: { w: 0.6, h: 0.6, gambar: (w) => circ(w / 2, w / 2, w / 2 - 0.05, 'stroke="#9a5a32" stroke-width="0.02" fill="#e9c9a8"') +
+    [0, 72, 144, 216, 288].map((a) => `<ellipse cx="${w / 2}" cy="${w / 2 - 0.13}" rx="0.07" ry="0.15" transform="rotate(${a} ${w / 2} ${w / 2})" fill="#6a9a4a"/>`).join("") },
   mejaKerja: { w: 1.6, h: 0.6, gambar: (w, h) => rect(0, 0, w, h, 0.02) + rect(w / 2 - 0.3, 0.06, 0.6, 0.04, 0, 'fill="#4a4a4a"') },
   kursi: { w: 0.5, h: 0.5, gambar: (w, h) => rect(0.03, 0.08, w - 0.06, h - 0.1, 0.08) + rect(0.06, 0, w - 0.12, 0.1, 0.04) },
   rak: { w: 0.35, h: 2.0, gambar: (w, h) => {

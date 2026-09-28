@@ -10,6 +10,8 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
   dengan denah 2D, jadi bukaan di denah otomatis jadi lubang berkaca di 3D.
 - Slider **Tahap**: rumah "tumbuh" dari tahap 1 ke tahap akhir; rencana tahap berikutnya tampil transparan.
 - Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
+- **Tahap 3 – Rooftop**: tangga melayang ke atap, rumah tangga beratap, pendopo (deck kayu, tiang besi,
+  atap limasan genteng), tembok parapet 130 cm, zona instalasi air, air panas, AC outdoor, antena & komunikasi.
 
 ## Menjalankan
 
@@ -38,7 +40,9 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
 - `RUANG`: tiap ruangan `x, y, w, h` (m), `lantai`, `tahap`, `jenis`,
   `finish` (`keramik` | `parket` | `basah` | `beton`), `perabot` (`[tipe, cx, cy, rotasi, w?, h?]`), `label` (opsional)
   - `jenis`: `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport), `"balkon"`,
-    `"tangga"` (bentuk L dihitung `tanggaL()`), `"void"`, `"mezanin"` (railing ke arah void)
+    `"tangga"` (`tanggaL()` / `tanggaLurus()`), `"void"`, `"mezanin"` (railing ke arah void),
+    `"rooftop"` (lantai atap + parapet), `"pendopo"`, `"zona"` (penanda area instalasi)
+  - `grup`: beberapa persegi dengan grup sama = satu ruangan (bentuk L), tanpa dinding di antaranya
 - `BUKAAN`: pintu/jendela di dinding `garis` `"h"` (y=pos) / `"v"` (x=pos), rentang `a..b`,
   `tipe` `pintu` | `bukaan` | `jendela` | `boven` | `jendelaTinggi`; pintu punya `engsel` (`"a"`/`"b"`) dan `buka` (+1/−1)
 - `VOID`: ukuran void (4 → 4×4 m, 3 → 3×3 m); tangga L ikut menyesuaikan
