@@ -39,7 +39,7 @@ export const ASUMSI = {
   tanah: 10000,                  // kg/m² daya dukung tanah izin asumsi (WAJIB dicek sondir)
   faktor: 1.3,                   // faktor beban rata-rata (1,2 D + 1,6 L)
 };
-const BERAT_ALAT = { tandon: 1100, pemanasAir: 300, acOutdoor: 60, pompa: 30, antena: 40, parabola: 30 };
+const BERAT_ALAT = { tandon: 1100, pemanasAir: 450, acOutdoor: 60, pompa: 30, antena: 40, parabola: 30 };
 const NAMA_ALAT = { tandon: "Tandon 1000 L", pemanasAir: "Pemanas air surya", acOutdoor: "AC outdoor", pompa: "Pompa" };
 
 // ================== KOLOM ==================

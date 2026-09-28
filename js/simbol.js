@@ -62,6 +62,8 @@ export const SIMBOL = {
   } },
   jemuran: { w: 3.2, h: 0.6, gambar: (w, h) => rect(0, 0, 0.08, h, 0, 'fill="#555"') + rect(w - 0.08, 0, 0.08, h, 0, 'fill="#555"') +
     [0.15, 0.3, 0.45].map((y) => path(`M0.08 ${y}H${w - 0.08}`, 'stroke="#777" stroke-width="0.012" stroke-dasharray="0.08 0.04" fill="none"')).join("") },
+  acIndoor: { w: 0.9, h: 0.22, gambar: (w, h) => rect(0, 0, w, h, 0.03, 'stroke="#2f5d86" stroke-width="0.02" fill="#eef4f9"') +
+    `<text x="${w / 2}" y="${h / 2 + 0.05}" font-size="0.13" font-weight="700" text-anchor="middle" fill="#2f5d86">AC</text>` },
   acOutdoor: { w: 0.8, h: 0.3, gambar: (w, h) => rect(0, 0, w, h, 0.02) + circ(w * 0.38, h / 2, 0.11, T) + path(`M${w * 0.72} 0.05V${h - 0.05}`) },
   antena: { w: 0.6, h: 0.6, gambar: (w) => circ(w / 2, w / 2, 0.08, 'fill="#333"') +
     path(`M0 ${w / 2}H${w}M${w / 2} 0V${w}M0.08 0.08L${w - 0.08} ${w - 0.08}`, 'stroke="#333" stroke-width="0.02" fill="none"') +

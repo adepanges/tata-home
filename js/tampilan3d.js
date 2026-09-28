@@ -234,9 +234,10 @@ export function buat3D(host) {
       case "tandon": add(cyl(0.55, 1.3, matAlat.tandon), 0, 0.65, 0); add(cyl(0.2, 0.08, matAlat.tandon), 0, 1.34, 0); break;
       case "pompa": add(box(0.5, 0.35, 0.4, matAlat.logam), 0, 0.18, 0); break;
       case "pemanasAir": {
-        const panel = add(box(2.0, 0.05, 1.0, matAlat.panel), 0, 0.55, 0.1);
+        const pw = w ?? 2.0, pd = (h ?? 1.3) - 0.3;
+        const panel = add(box(pw, 0.05, pd, matAlat.panel), 0, 0.55, 0.1);
         panel.rotation.x = -0.35;
-        const t = add(cyl(0.2, 2.0, matAlat.putih), 0, 0.95, -0.45);
+        const t = add(cyl(0.2, pw, matAlat.putih), 0, 0.95, -pd / 2 + 0.05);
         t.rotation.z = Math.PI / 2;
         break;
       }
@@ -410,7 +411,11 @@ export function buat3D(host) {
       for (const p of r.perabot || []) {
         const [tipe, x, y, rot = 0] = p;
         if (tipe === "mobil") g.add(buatMobil(x, y, rot));
-        else { const o = perabot3D(p, base + TEBAL_PELAT); if (o) g.add(o); }
+        else {
+          // AC outdoor lantai 1 dipasang di braket dinding ±2 m
+          const o = perabot3D(p, base + TEBAL_PELAT + (tipe === "acOutdoor" && r.lantai === 1 ? 2.0 : 0));
+          if (o) g.add(o);
+        }
       }
       if (!diAtas.length && r.label !== false) {
         const t = r.jenis === "terbuka" ? 0.3 : r.jenis === "rooftop" ? TINGGI_PARAPET : TINGGI_LANTAI;

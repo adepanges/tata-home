@@ -14,6 +14,9 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
   adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2:
   walk-in terbuka ke kamar utama, dinding kaca geser ke balkon. Ruang kerja lantai 2 tertutup partisi ringan kedap suara
   (gipsum 2 lapis + rockwool, `PARTISI`) dengan kaca mati laminated ke dapur kering.
+- **AC split** (6 ruang: living, studio lt 1, studio kerja, K. Anak, K. Tamu, K. Utama): outdoor sedekat mungkin
+  dengan indoor. Lantai 1 di dinding garasi/halaman; lantai 2 di rooftop tepat di atas atau di samping ruangnya.
+  Tandon di atas KM Dalam (shaft pipa), pemanas air surya ±300 L di area rooftop yang tidak terbayang.
 - **Tahap 3 – Rooftop**: tangga melayang ke atap, rumah tangga beratap, pendopo (deck kayu, tiang besi,
   atap limasan ringan uPVC warna coklat), tembok parapet 130 cm, zona instalasi air, air panas, AC outdoor, antena & komunikasi.
 - **Struktur kolom & balok** (perkiraan awal): toggle *Struktur* di denah 2D (grid as A–E / 1–4, kolom, balok putus-putus
