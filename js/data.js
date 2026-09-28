@@ -161,14 +161,17 @@ export const RUANG = [
   // ---- Tahap 3: tangga ke rooftop + lantai 3 (rooftop terbuka, tanpa kamar) ----
   // tangga lurus berangkat dari dapur kering (sebelah tempat tangga bawah tiba), naik ke barat
   { nama: "Tangga Rooftop", ...TANGGA_ATAS, lantai: 2, tahap: 3, jenis: "tangga", ...tanggaLurus(TANGGA_ATAS, "-x") },
-  // rumah tangga 4 × 2 m (lubang tangga + bordes), beratap supaya hujan tidak masuk
-  { nama: "Lubang Tangga", ...TANGGA_ATAS, lantai: 3, tahap: 3, jenis: "void", grup: "r-tangga", label: false },
-  { nama: "R. Tangga", x: 0, y: 2, w: 4, h: 1, lantai: 3, tahap: 3, jenis: "ruang", grup: "r-tangga", finish: "keramik",
-    label: [2.4, 2.45] },
+  // rumah tangga beratap (bentuk L): lubang tangga + bordes 1,2 × 1 m tempat tangga tiba,
+  // pintu di bordes langsung membuka ke rooftop
+  { nama: "Lubang Tangga", ...TANGGA_ATAS, lantai: 3, tahap: 3, jenis: "void", grup: "r-tangga", label: false,
+    lubangTangga: true },
+  { nama: "R. Tangga", x: 0, y: 2, w: 1.2, h: 1, lantai: 3, tahap: 3, jenis: "ruang", grup: "r-tangga", finish: "keramik",
+    label: false },
   // lantai rooftop, dikelilingi tembok parapet 130 cm
   { nama: "Rooftop", x: 0, y: 0, w: 12, h: 2, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton",
-    label: [2.0, 1.0] },
-  { nama: "Rooftop", x: 4, y: 2, w: 8, h: 2, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
+    label: [2.6, 1.1] },
+  { nama: "Rooftop", x: 1.2, y: 2, w: 10.8, h: 1, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
+  { nama: "Rooftop", x: 4, y: 3, w: 8, h: 1, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
   { nama: "Rooftop", x: 0, y: 4, w: 12, h: 6, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false,
     perabot: [["pot", 4.55, 5.2, 0], ["pot", 4.55, 9.35, 0], ["pot", 11.45, 1.9, 0]] },
   // pendopo di tengah untuk berkumpul: deck kayu, tiang besi, atap limasan genteng
@@ -228,7 +231,7 @@ export const BUKAAN = [
   { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 2.9, b: 4.1 },
   { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.5, b: 2.8 },  // cahaya ke void
   // lantai 3
-  { lantai: 3, tipe: "pintu",   garis: "v", pos: 4,    a: 2.1, b: 2.9, engsel: "a", buka: +1 },  // rumah tangga
+  { lantai: 3, tipe: "pintu",   garis: "v", pos: 1.2,  a: 2.12, b: 2.88, engsel: "a", buka: +1 }, // bordes → rooftop
   { lantai: 2, tipe: "jendelaTinggi", garis: "h", pos: 0, a: 0.5, b: 3.5 },
 ];
 

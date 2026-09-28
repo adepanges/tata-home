@@ -81,16 +81,22 @@ function gambarBukaan(b) {
 
 function gambarTangga(r, gaya) {
   const out = [];
-  const stroke = gaya === "aktif" ? "#555" : gaya === "bayang" ? "#c9c9c9" : TAHAP[r.tahap].warna;
+  const stroke = gaya === "aktif" || gaya === "tiba" ? "#555" : gaya === "bayang" ? "#c9c9c9" : TAHAP[r.tahap].warna;
   const dash = gaya === "rencana" ? 'stroke-dasharray="0.08 0.05"' : "";
   for (const a of r.anak)
-    out.push(`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${gaya === "aktif" ? (a.bordes ? "#f1f1ef" : "#fff") : "none"}" stroke="${stroke}" stroke-width="0.015" ${dash}/>`);
+    out.push(`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${gaya === "aktif" || gaya === "tiba" ? (a.bordes ? "#f1f1ef" : "#fff") : "none"}" stroke="${stroke}" stroke-width="0.015" ${dash}/>`);
   if (gaya !== "bayang") {
     out.push(`<polyline points="${r.panah.map((p) => p.join(",")).join(" ")}" fill="none" stroke="#333" stroke-width="0.025" marker-end="url(#panah)"/>`);
     const [x0, y0] = r.panah[0];
     out.push(`<circle cx="${x0}" cy="${y0}" r="0.05" fill="#333"/>`);
-    out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.35}" font-size="0.2" fill="#333" ${halo}>NAIK</text>`);
-    out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.6}" font-size="0.16" fill="#666" ${halo}>${r.jumlah} × ${(r.naik * 100).toFixed(1)} cm</text>`);
+    if (gaya === "tiba") {
+      // dilihat dari lantai atas: tangga yang tiba di lantai ini
+      const [x1, y1] = r.panah[r.panah.length - 1];
+      out.push(`<text x="${(x0 + x1) / 2}" y="${y0 + 0.07}" font-size="0.2" text-anchor="middle" fill="#333" ${halo}>NAIK DARI LANTAI ${r.lantai}</text>`);
+    } else {
+      out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.35}" font-size="0.2" fill="#333" ${halo}>NAIK</text>`);
+      out.push(`<text x="${x0 + 0.15}" y="${y0 + 0.6}" font-size="0.16" fill="#666" ${halo}>${r.jumlah} × ${(r.naik * 100).toFixed(1)} cm</text>`);
+    }
   }
   return out.join("");
 }
@@ -127,10 +133,15 @@ export function gambarDenah(svg, state) {
     if (r.lantai === lt) {
       if (dibangun(r)) out.push(gambarTangga(r, "aktif"));
       else if (state.ghost) out.push(gambarTangga(r, "rencana"));
-    } else if (r.lantai === lt - 1 && dibangun(r)) out.push(gambarTangga(r, "bayang"));
+    } else if (r.lantai === lt - 1 && dibangun(r)) {
+      // tangga yang tiba lewat lubang tangga digambar jelas; yang terlihat lewat void digambar samar
+      const lewatLubang = aktif.some((v) => v.lubangTangga && v.x <= r.x + 1e-6 && v.y <= r.y + 1e-6 &&
+        v.x + v.w >= r.x + r.w - 1e-6 && v.y + v.h >= r.y + r.h - 1e-6);
+      out.push(gambarTangga(r, lewatLubang ? "tiba" : "bayang"));
+    }
   }
   // 3. void
-  for (const r of aktif.filter((r) => r.jenis === "void"))
+  for (const r of aktif.filter((r) => r.jenis === "void" && !r.lubangTangga))
     out.push(`<path d="M${r.x} ${r.y}L${r.x + r.w} ${r.y + r.h}M${r.x + r.w} ${r.y}L${r.x} ${r.y + r.h}" stroke="#9a9a9a" stroke-width="0.015" stroke-dasharray="0.12 0.08"/>`);
   // 4. furnitur
   for (const r of aktif) for (const p of r.perabot || []) out.push(gambarPerabot(p));
