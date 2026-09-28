@@ -220,11 +220,11 @@ export const BALOK = BALOK_DEF.map((d) => {
   if (b.jenis === "kantilever") b.kolomUjung = [kA, null];
   const garis = b.o === "h" ? `${namaY(b.pos)}/${namaX(b.a)}–${namaX(b.b)}` : `${namaX(b.pos)}/${namaY(b.a)}–${namaY(b.b)}`;
   b.id = `${KODE[b.jenis]}${b.level} ${garis}`;
-  // tahap: seluruh rangka balok satu level (induk, anak, tepi void, dudukan tandon) dicor BERSAMA di tahap
-  // sebelum lantainya dipakai — balok lantai 2 di tahap 1, balok rooftop di tahap 2 — monolit dengan kolom,
-  // ukuran final, tanpa sambungan/stek belakangan. Balok bordes & kantilever tangga rooftop dicor bersama
-  // kolom & dinding lantai 2 (tahap 2). Ring balok parapet/R. Tangga ikut dindingnya (tahap 3).
-  b.tahap = b.jenis === "sloof" ? 1 : ["tangga", "kantilever"].includes(b.jenis) ? 2 : b.level - 1;
+  // tahap: 0 = pondasi + sloof; tahap k = kolom lantai k + SELURUH balok (induk, anak, tepi void, dudukan)
+  // & pelat level k+1, dicor monolit dengan ukuran final → tahap berikutnya struktur sudah siap.
+  // Balok bordes & kantilever tangga rooftop dicor bersama kolom lantai 2 (tahap 2); ring balok
+  // parapet/R. Tangga ikut dindingnya (tahap 3).
+  b.tahap = b.jenis === "sloof" ? 0 : ["tangga", "kantilever"].includes(b.jenis) ? 2 : b.level - 1;
   return b;
 });
 
@@ -554,6 +554,24 @@ export const NAMA_BALOK = {
   kantilever: "Balok kantilever", sloof: "Sloof", ring: "Ring balok",
 };
 export const WARNA_STATUS = { a: "#e0b000", b: "#d62828", c: "#d62828" };
+export const WARNA_KOLOM = "#4a4a4a";
+export const WARNA_PONDASI = "#a1887f";
+// warna dinding di mode struktur — SAMA untuk 2D & 3D: di atas pelat → kuning (a) / merah (b, c);
+// di atas balok/sloof → warna materialnya (bata merah / hebel / partisi gipsum)
+export function warnaDindingStruktur(lantai, d) {
+  const r = cariDinding(lantai, d.o, d.pos, d.a, d.b);
+  if (r && WARNA_STATUS[r.status]) return WARNA_STATUS[r.status];
+  if (partisiDi(lantai, d.o, d.pos, (d.a + d.b) / 2)) return PARTISI.material.warna;
+  return MATERIAL_DINDING[lantai].warna;
+}
+// denah lantai lt menampilkan: balok "atas" (plafon: balok yang ditumpu kolom lantai ini, putus-putus + ukuran)
+// dan balok "bawah" (sloof / balok tempat dinding lantai ini berdiri, garis tipis) → tidak ada balok yang terlewat
+export function posisiBalok(b, lt) {
+  if (b.jenis === "sloof") return lt === 0 ? "atas" : lt === 1 ? "bawah" : null;   // lantai 0 = denah pondasi
+  if (b.jenis === "ring") return lt === 3 ? "atas" : null;
+  if (b.elev != null) return lantaiTampil(b) === lt ? "atas" : null;
+  return b.level === lt + 1 ? "atas" : b.level === lt ? "bawah" : null;
+}
 
 // ================== RINGKASAN ==================
 export function ringkasan() {

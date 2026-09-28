@@ -61,7 +61,7 @@
 <header>
   <h1>Denah Rumah Bertumbuh</h1>
   <label class="ctrl">Tahap
-    <input id="tahap" type="range" min="1" max="2" step="1" value="1">
+    <input id="tahap" type="range" min="0" max="3" step="1" value="1">
     <b id="tahapLbl"></b>
   </label>
   <label class="ctrl"><input id="ghost" type="checkbox" checked> Tampilkan rencana tahap berikutnya</label>
@@ -71,7 +71,7 @@
   <section class="card">
     <h2>Denah 2D
       <span class="tools">
-        <span class="seg" id="lantaiSeg"><button data-lantai="1" class="on">Lantai 1</button><button data-lantai="2">Lantai 2</button><button data-lantai="3">Rooftop</button></span>
+        <span class="seg" id="lantaiSeg"><button data-lantai="0" title="Denah pondasi & sloof">Pondasi</button><button data-lantai="1" class="on">Lantai 1</button><button data-lantai="2">Lantai 2</button><button data-lantai="3">Rooftop</button></span>
         <label class="tog"><input id="struktur2d" type="checkbox"> Struktur</label>
         <button class="btn" id="unduhSvg" title="Unduh denah sebagai SVG">⤓ SVG</button>
       </span>
@@ -90,6 +90,7 @@
       <label><input id="warnaTahap" type="checkbox" checked> Warna dinding per tahap</label>
       <label><input id="struktur3d" type="checkbox"> Struktur (dinding transparan: bata merah / hebel)</label>
     </div>
+    <div class="legend struktur" id="legendStruktur3d" hidden></div>
     <div class="shortcut" id="shortcut"></div>
   </section>
 

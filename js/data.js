@@ -32,8 +32,8 @@ export const TINGGI_PARAPET = 1.3;
 // Lantai 2 & rooftop SEMUA hebel 10 cm (termasuk KM + waterproofing, parapet, ruang tangga rooftop).
 export const MATERIAL_DINDING = {
   1: { nama: "Bata merah", berat: 250, warna: "#b4533a" },
-  2: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
-  3: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
+  2: { nama: "Hebel 10 cm", berat: 115, warna: "#8fa6ba" },
+  3: { nama: "Hebel 10 cm", berat: 115, warna: "#8fa6ba" },
 };
 export const BERAT_BATA_MERAH = 250;   // pembanding: seandainya lantai atas memakai bata merah
 export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca (kaca geser, jendela, kaca mati laminated)
@@ -42,7 +42,7 @@ export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca (kaca ge
 // isi rockwool 50 mm (±60 kg/m³) → ±45 kg/m², STC ±50 (setara/lebih kedap dari hebel 10 cm, STC ±40–45).
 // Cukup di atas pelat (tanpa balok anak) walau di atas garasi.
 export const PARTISI = {
-  material: { nama: "Partisi gipsum 2 lapis + rockwool", berat: 45, warna: "#e3cf9f" },
+  material: { nama: "Partisi gipsum 2 lapis + rockwool", berat: 45, warna: "#d4b77a" },
   garis: [
     { lantai: 2, garis: "v", pos: 7, a: 0, b: 4 },   // ruang kerja | dapur kering (+ kaca mati laminated)
     { lantai: 2, garis: "h", pos: 4, a: 7, b: 8 },   // ruang kerja | koridor (pintu solid-core + seal)
@@ -51,10 +51,13 @@ export const PARTISI = {
 export const partisiDi = (lantai, o, pos, t) => PARTISI.garis.some((g) =>
   g.lantai === lantai && g.garis === o && Math.abs(g.pos - pos) < 1e-3 && t > g.a - 0.1 && t < g.b + 0.1);
 
+// Urutan struktur: tahap 0 pondasi + sloof; tiap tahap k membangun lantai k + kolomnya, dan SEKALIGUS
+// mengecor balok & pelat (dak) lantai di atasnya, sehingga tahap berikutnya tinggal naik (lihat tahapPelat).
 export const TAHAP = {
-  1: { nama: "Tahap 1 – Lantai 1",          warna: "#e8a33d" },
-  2: { nama: "Tahap 2 – Tangga + Lantai 2", warna: "#4f9d5a" },
-  3: { nama: "Tahap 3 – Rooftop",           warna: "#4a78b8" },
+  0: { nama: "Tahap 0 – Pondasi & sloof",                 warna: "#8d6e63" },
+  1: { nama: "Tahap 1 – Lantai 1 + dak lantai 2",         warna: "#e8a33d" },
+  2: { nama: "Tahap 2 – Tangga, Lantai 2 + dak rooftop",  warna: "#4f9d5a" },
+  3: { nama: "Tahap 3 – Rooftop",                         warna: "#4a78b8" },
 };
 
 // Void di pojok kiri-atas living room (ganti ke 3 untuk void 3×3); tangga L ada di dalamnya
@@ -304,6 +307,11 @@ export const TANPA_DINDING = [
 export const TINGGI_BUKAAN = {
   pintu: [0, 2.1], bukaan: [0, 2.4], jendela: [0.9, 2.1], boven: [1.7, 2.1], jendelaTinggi: [0.3, 2.6], kaca: [0, 2.6],
 };
+
+// Pelat lantai ≥ 2 dicor satu tahap lebih awal dari ruangannya (sebagai dak/atap datar sementara);
+// bukaan void/lubang tangga diberi atap sementara sampai ruangannya dibangun.
+export const JENIS_BERPELAT = ["ruang", "mezanin", "balkon", "rooftop"];
+export const tahapPelat = (r) => (r.lantai >= 2 ? r.tahap - 1 : r.tahap);
 
 export const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan
 // void bukan lantai; tangga di dalam ruang lain; pendopo & zona sudah termasuk luas rooftop

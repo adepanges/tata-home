@@ -1,6 +1,7 @@
 // Tabel ringkasan & legenda struktur (HTML). Semua angka = perkiraan awal untuk diskusi.
-import { MATERIAL_DINDING, BERAT_BATA_MERAH } from "./data.js";
-import { KOLOM, BALOK, DINDING, BEBAN_TITIK, GRID_X, GRID_Y, ASUMSI, WARNA_BALOK, NAMA_BALOK, WARNA_STATUS, ringkasan, fmtM } from "./struktur.js";
+import { MATERIAL_DINDING, BERAT_BATA_MERAH, PARTISI } from "./data.js";
+import { KOLOM, BALOK, DINDING, BEBAN_TITIK, GRID_X, GRID_Y, ASUMSI, WARNA_BALOK, NAMA_BALOK, WARNA_STATUS, WARNA_KOLOM, WARNA_PONDASI,
+  ringkasan, fmtM } from "./struktur.js";
 
 const ton = (kg) => `${fmtM(kg / 1000)} t`;
 const NAMA_LEVEL = { 1: "Sloof (lantai 1)", 2: "Balok lantai 2", 3: "Balok rooftop" };
@@ -10,14 +11,19 @@ const PERINGATAN = `<div class="peringatan"><b>Perkiraan awal untuk diskusi, buk
   Pondasi dan kolom tahap 1 harus dihitung untuk <b>beban akhir 3 lantai</b> (lantai 2 + rooftop),
   dan daya dukung tanah wajib dicek (sondir).</div>`;
 
-export function legendStruktur() {
+// legenda yang sama dipakai di denah 2D dan model 3D (warnanya identik)
+export function legendStruktur(d3 = false) {
   const balok = Object.entries(WARNA_BALOK).map(([j, c]) => `<span style="--c:${c}">${NAMA_BALOK[j]}</span>`).join("");
   return balok +
-    `<span class="kotak" style="--c:#111">Kolom (putus-putus = kolom lantai bawah)</span>` +
-    `<span class="kotak" style="--c:#a9a9a9">Dinding di atas balok/sloof</span>` +
+    `<span class="kotak" style="--c:${WARNA_KOLOM}">Kolom${d3 ? "" : " (putus-putus = kolom lantai bawah)"}</span>` +
+    `<span class="kotak" style="--c:${WARNA_PONDASI}">Pondasi telapak</span>` +
+    `<span class="kotak" style="--c:${MATERIAL_DINDING[1].warna}">Dinding bata merah (lt 1)</span>` +
+    `<span class="kotak" style="--c:${MATERIAL_DINDING[2].warna}">Dinding hebel (lt 2, rooftop)</span>` +
+    `<span class="kotak" style="--c:${PARTISI.material.warna}">Partisi gipsum</span>` +
     `<span class="kotak" style="--c:${WARNA_STATUS.a}">Dinding di atas pelat + tulangan tambahan</span>` +
-    `<span class="kotak" style="--c:${WARNA_STATUS.b}">Perlu balok anak / digeser</span>` +
-    `<span class="kotak" style="--c:#c0392b">▼ beban terpusat rooftop</span>`;
+    `<span class="kotak" style="--c:${WARNA_STATUS.b}">Dinding perlu balok anak / digeser</span>` +
+    (d3 ? "" : `<span class="kotak" style="--c:#c0392b">▼ beban terpusat rooftop</span>` +
+      `<span class="kotak" style="--c:#fff">Putus-putus + ukuran = balok di atas lantai ini (plafon); garis tipis = sloof/balok di bawah lantai ini</span>`);
 }
 
 export function renderStruktur() {
@@ -80,11 +86,14 @@ export function renderStruktur() {
     Lalu dicek kasar terhadap momen dari jalur beban pelat → balok anak → balok induk → kolom.</li>
     <li>Pelat lantai 2: ${ASUMSI.pelat[2] * 100} cm. Rooftop: ${ASUMSI.pelat[3] * 100} cm (taman, tandon, pendopo).
       Beban hidup ${ASUMSI.ll[2]} / ${ASUMSI.ll[3]} kg/m². KM +${ASUMSI.basah} kg/m², taman +${ASUMSI.taman} kg/m².</li>
-    <li><b>Urutan cor per tahap</b>: seluruh balok lantai 2 (induk, anak, tepi void) dicor di <b>tahap 1</b> bersama kolom
-      lantai 1, dengan ukuran final. Balok anak untuk dinding KM dan kamar lantai 2 juga dicor di tahap 1, meski dindingnya
-      baru dibangun di tahap 2. Seluruh balok rooftop, termasuk dudukan tandon, dicor di <b>tahap 2</b>. Dengan begitu
-      tidak ada balok yang disambung atau dibobok belakangan. Pelat lantai 2 sebaiknya sekalian dicor di tahap 1 sebagai
-      dak (atap datar + waterproofing sementara). Kalau pelat ditunda, siapkan stek tulangan di semua balok.</li></ul>`);
+    <li><b>Urutan per tahap</b>, sehingga di awal setiap tahap struktur untuk lantai itu sudah siap:
+      <b>Tahap 0</b>: pondasi telapak + sloof (dihitung untuk beban akhir 3 lantai).
+      <b>Tahap 1</b>: kolom lantai 1 + seluruh balok lantai 2 (induk, anak, tepi void) + pelat lantai 2 sebagai dak
+      (waterproofing sementara, atap sementara di atas void). Balok anak untuk dinding KM dan kamar lantai 2 ikut dicor di sini.
+      <b>Tahap 2</b>: kolom lantai 2 + seluruh balok rooftop (termasuk dudukan tandon) + pelat rooftop, serta balok bordes
+      tangga rooftop. <b>Tahap 3</b>: ring balok parapet &amp; R. Tangga, kolom praktis, pendopo.
+      Tidak ada balok yang disambung atau dibobok belakangan. Siapkan stek tulangan di puncak kolom tiap tahap untuk kolom
+      lantai berikutnya.</li></ul>`);
 
   // ---- beban dinding: hebel vs bata ----
   const tot = R.bebanDinding.filter((b) => b.lantai > 1);

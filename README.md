@@ -8,7 +8,9 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
   skala batang. Bisa diunduh sebagai SVG.
 - **Model 3D** ([Three.js](https://threejs.org)): dinding, pintu & jendela diambil dari model yang sama
   dengan denah 2D, jadi bukaan di denah otomatis jadi lubang berkaca di 3D.
-- Slider **Tahap**: rumah "tumbuh" dari tahap 1 ke tahap akhir; rencana tahap berikutnya tampil transparan.
+- Slider **Tahap** (0–3): rumah "tumbuh" dari tahap 0 ke tahap akhir; rencana tahap berikutnya tampil transparan.
+  Tahap 0 = pondasi + sloof. Tiap tahap k membangun lantai k + kolomnya **dan** mengecor balok & pelat (dak) lantai
+  di atasnya, jadi saat tahap berikutnya dimulai strukturnya sudah siap.
 - Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
 - **Open space** lantai 1: living, r. makan, dapur, foyer & selasar menyatu (daftar `TANPA_DINDING`); satu-satunya sekat
   adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2:

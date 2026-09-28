@@ -12,6 +12,14 @@ $("tahap").max = Math.max(...RUANG.map((r) => r.tahap));
 $("legend").innerHTML = Object.values(TAHAP)
   .map((t) => `<span style="--c:${t.warna}">${t.nama}</span>`).join("");
 
+// pekerjaan struktur tiap tahap: lantai berikutnya selalu sudah punya balok & pelat
+const STRUKTUR_TAHAP = {
+  0: "",
+  1: "· struktur: kolom lt 1, balok & pelat (dak) lantai 2",
+  2: "· struktur: kolom lt 2, balok & pelat (dak) rooftop",
+  3: "· struktur: ring balok parapet & R. Tangga, kolom praktis",
+};
+
 function renderRingkasan() {
   let kum = 0;
   const rows = Object.entries(TAHAP).map(([k, t]) => {
@@ -22,7 +30,8 @@ function renderRingkasan() {
     kum = fmt(kum + luas);
     return `<tr class="${+k > state.tahap ? "future" : ""}">
       <td><span style="color:${t.warna}">■</span> ${t.nama}</td>
-      <td>${[...new Set(rs.map((r) => r.nama))].join(", ")}</td>
+      <td>${rs.length ? [...new Set(rs.map((r) => r.nama))].join(", ") : "Pondasi telapak &amp; sloof"}
+        <small style="color:var(--muted)">${STRUKTUR_TAHAP[k]}</small></td>
       <td class="num">${luas} m²</td><td class="num">${luasLain} m²</td><td class="num">${kum} m²</td></tr>`;
   });
   $("ringkasan").innerHTML = `<tr><th>Tahap</th><th>Ruangan</th><th class="num">Luas bangunan</th>
@@ -87,18 +96,21 @@ $("tanpaAtap").onchange = (e) => {
 $("warnaTahap").onchange = (e) => { state.warnaTahap = e.target.checked; tiga.renderUlang(state); };
 $("struktur2d").onchange = (e) => {
   state.struktur2d = e.target.checked;
-  $("legendStruktur").hidden = !state.struktur2d;
+  $("legendStruktur").hidden = !(state.struktur2d || state.lantai === 0);
   gambarDenah(svg, state);
 };
 $("struktur3d").onchange = (e) => {
   state.struktur3d = e.target.checked;
+  $("legendStruktur3d").hidden = !state.struktur3d;
   if (state.struktur3d && !state.tanpaAtap) tiga.kameraAtas(true);
   tiga.renderUlang(state);
 };
 $("legendStruktur").innerHTML = legendStruktur();
+$("legendStruktur3d").innerHTML = legendStruktur(true);
 $("strukturIsi").innerHTML = renderStruktur();
 function pilihLantai(lt) {
   state.lantai = lt;
+  $("legendStruktur").hidden = !(state.struktur2d || lt === 0);   // denah pondasi selalu mode struktur
   for (const x of $("lantaiSeg").children) x.classList.toggle("on", +x.dataset.lantai === lt);
   gambarDenah(svg, state);
 }

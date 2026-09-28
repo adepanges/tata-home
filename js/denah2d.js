@@ -1,9 +1,10 @@
 // Denah 2D gaya gambar kerja: dinding tebal tersambung, pintu dengan busur bukaan,
 // jendela, pola lantai, furnitur, garis ukuran berantai, skala batang.
-import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING, partisiDi } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING, partisiDi, JENIS_BERPELAT, tahapPelat } from "./data.js";
 import { modelDinding, tiangPendopo } from "./model.js";
 import { gambarPerabot } from "./simbol.js";
-import { KOLOM, BALOK, GRID_X, GRID_Y, BEBAN_TITIK, WARNA_BALOK, WARNA_STATUS, cariDinding, lantaiTampil, fmtM } from "./struktur.js";
+import { KOLOM, BALOK, GRID_X, GRID_Y, BEBAN_TITIK, WARNA_BALOK, WARNA_STATUS, WARNA_KOLOM, WARNA_PONDASI, cariDinding, fmtM,
+  warnaDindingStruktur, posisiBalok } from "./struktur.js";
 
 const PAD = { l: 2.3, t: JALAN === "atas" ? 2.9 : 2.1, r: JALAN === "kanan" ? 2.1 : 1.3, b: 2.9 };
 const DINDING = "#2b2b2b";
@@ -119,7 +120,23 @@ function gambarStruktur(lt, state, m) {
       `<text x="-1.97" y="${y + 0.075}" font-size="0.21" font-weight="700" text-anchor="middle" fill="#2f5d86">${n}</text>`);
   // balok
   const TEBAL = { induk: 0.09, anak: 0.06, void: 0.075, tangga: 0.05, kantilever: 0.06, sloof: 0.08, ring: 0.035 };
-  for (const b of BALOK.filter((b) => lantaiTampil(b) === lt)) {
+  // pondasi telapak (tahap 0) di denah pondasi (lantai 0), dengan ukurannya
+  if (lt === 0)
+    for (const k of KOLOM.filter((k) => k.pondasi)) {
+      const op = redup(0), s = k.pondasi;
+      if (op === null) continue;
+      out.push(`<rect x="${k.x - s / 2}" y="${k.y - s / 2}" width="${s}" height="${s}" fill="${WARNA_PONDASI}" fill-opacity="0.2" stroke="${WARNA_PONDASI}" stroke-width="0.02" stroke-dasharray="0.08 0.05"${op}/>`,
+        `<text x="${k.x}" y="${k.y + s / 2 - 0.08}" font-size="0.13" text-anchor="middle" fill="#6d4c41" ${halo}${op}>${fmtM(s)} × ${fmtM(s)}</text>`);
+    }
+  // balok "bawah" (sloof / balok di bawah dinding lantai ini): garis tipis penuh
+  for (const b of BALOK.filter((b) => posisiBalok(b, lt) === "bawah")) {
+    const op = redup(b.tahap);
+    if (op === null) continue;
+    const [x1, y1, x2, y2] = b.o === "h" ? [b.a, b.pos, b.b, b.pos] : [b.pos, b.a, b.pos, b.b];
+    out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${WARNA_BALOK[b.jenis]}" stroke-width="0.035" stroke-opacity="0.55"${op}/>`);
+  }
+  // balok "atas" (plafon lantai ini, ditumpu kolom lantai ini): putus-putus + ukuran b/h
+  for (const b of BALOK.filter((b) => posisiBalok(b, lt) === "atas")) {
     const op = redup(b.tahap);
     if (op === null) continue;
     const c = WARNA_BALOK[b.jenis], [x1, y1, x2, y2] = b.o === "h" ? [b.a, b.pos, b.b, b.pos] : [b.pos, b.a, b.pos, b.b];
@@ -132,16 +149,18 @@ function gambarStruktur(lt, state, m) {
   }
   // kolom: yang menerus di lantai ini hitam; kolom lantai bawah yang berhenti di bawah pelat ini: garis putus-putus
   for (const k of KOLOM) {
-    const di = k.lantai.includes(lt), bawah = !di && k.lantai.includes(lt - 1) && k.jenis === "struktur";
+    // denah pondasi: kolom lantai 1 tampil sebagai pedestal (dicor tahap 0)
+    const ltK = Math.max(lt, 1);
+    const di = k.lantai.includes(ltK), bawah = !di && k.lantai.includes(lt - 1) && k.jenis === "struktur";
     if (!di && !bawah) continue;
-    const op = redup(di ? lt : lt - 1);
+    const op = redup(lt === 0 ? 0 : di ? lt : lt - 1);
     if (op === null) continue;
-    const [b, h] = (k.dim[di ? lt : lt - 1]).map((v) => v / 100);
+    const [b, h] = (k.dim[di ? ltK : lt - 1]).map((v) => v / 100);
     out.push(di
-      ? `<rect x="${k.x - b / 2}" y="${k.y - h / 2}" width="${b}" height="${h}" fill="#111"${op}/>`
-      : `<rect x="${k.x - b / 2}" y="${k.y - h / 2}" width="${b}" height="${h}" fill="none" stroke="#111" stroke-width="0.02" stroke-dasharray="0.05 0.03"${op}/>`);
+      ? `<rect x="${k.x - b / 2}" y="${k.y - h / 2}" width="${b}" height="${h}" fill="${WARNA_KOLOM}"${op}/>`
+      : `<rect x="${k.x - b / 2}" y="${k.y - h / 2}" width="${b}" height="${h}" fill="none" stroke="${WARNA_KOLOM}" stroke-width="0.02" stroke-dasharray="0.05 0.03"${op}/>`);
     if (k.jenis === "struktur" && di)
-      out.push(`<text x="${k.x + b / 2 + 0.04}" y="${k.y - h / 2 - 0.04}" font-size="0.13" fill="#111" ${halo}${op}>${k.id} ${k.dim[lt].join("/")}</text>`);
+      out.push(`<text x="${k.x + b / 2 + 0.04}" y="${k.y - h / 2 - 0.04}" font-size="0.13" fill="${WARNA_KOLOM}" ${halo}${op}>${k.id} ${k.dim[ltK].join("/")}</text>`);
   }
   // penanda dinding perlu perhatian
   const sudah = new Set();
@@ -176,6 +195,12 @@ export function gambarDenah(svg, state) {
   const out = [DEFS];
 
   out.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="#fafaf8" stroke="#c8c8c8" stroke-width="0.02" stroke-dasharray="0.15 0.1"/>`);
+  // denah pondasi: dinding lantai 1 samar sebagai acuan posisi sloof
+  if (lt === 0)
+    for (const d of modelDinding(RUANG, BUKAAN, 1, () => true).dinding)
+      out.push(d.o === "h"
+        ? `<rect x="${d.a}" y="${d.pos - TEBAL_DINDING / 2}" width="${d.b - d.a}" height="${TEBAL_DINDING}" fill="#e4e2dc"/>`
+        : `<rect x="${d.pos - TEBAL_DINDING / 2}" y="${d.a}" width="${TEBAL_DINDING}" height="${d.b - d.a}" fill="#e4e2dc"/>`);
 
   // 1. pola lantai
   for (const r of aktif) {
@@ -219,17 +244,13 @@ export function gambarDenah(svg, state) {
     const [a, b] = r.h >= r.w ? [p, q] : [p, q];
     out.push(`<path d="M${x0} ${y0}L${a[0]} ${a[1]}L${x1} ${y0}M${a[0]} ${a[1]}L${b[0]} ${b[1]}M${x0} ${y1}L${b[0]} ${b[1]}L${x1} ${y1}" ${s}/>`);
   }
-  const S = state.struktur2d;
+  const S = state.struktur2d || lt === 0;   // denah pondasi selalu mode struktur
   if (S) out.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff" fill-opacity="0.6"/>`);
   // 5. dinding, railing, bukaan
-  // mode struktur: dinding di atas balok/sloof abu-abu, di atas pelat kuning (a) / merah (b, c)
+  // mode struktur: dinding di atas balok/sloof = warna material, di atas pelat kuning (a) / merah (b, c) — sama dengan 3D
   const m = modelDinding(RUANG, BUKAAN, lt, dibangun);
   const t2 = TEBAL_DINDING / 2;
-  const warnaDinding = (d, biasa) => {
-    if (!S) return biasa;
-    const r = cariDinding(lt, d.o, d.pos, d.a, d.b);
-    return !r || ["balok", "sloof"].includes(r.status) ? "#a9a9a9" : WARNA_STATUS[r.status];
-  };
+  const warnaDinding = (d, biasa) => (S ? warnaDindingStruktur(lt, d) : biasa);
   for (const d of m.dinding) {
     // partisi gipsum (ruang kerja): isi terang + garis tengah, beda dari pasangan hebel/bata
     const partisi = partisiDi(lt, d.o, d.pos, (d.a + d.b) / 2);
@@ -270,7 +291,10 @@ export function gambarDenah(svg, state) {
     }
   if (S) out.push(gambarStruktur(lt, state, m));
 
-  // 6. rencana tahap berikutnya
+  // 6. pelat (dak) yang sudah dicor untuk lantai yang ruangannya belum dibangun
+  for (const r of ruangLt.filter((r) => !dibangun(r) && JENIS_BERPELAT.includes(r.jenis) && tahapPelat(r) <= state.tahap))
+    out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#d9d6cf" fill-opacity="0.55"/>`);
+  // 6b. rencana tahap berikutnya
   for (const r of rencana) {
     if (r.jenis === "tangga" || r.jenis === "zona") continue;
     const c = TAHAP[r.tahap].warna;
@@ -292,7 +316,8 @@ export function gambarDenah(svg, state) {
     out.push(`<text x="${lx}" y="${ly}" font-size="0.24" font-weight="600" letter-spacing="0.01" text-anchor="middle" fill="${built ? "#222" : "#999"}" ${halo}>${nama}</text>`);
     const potongan = r.grup ? RUANG.filter((o) => o.grup === r.grup) : [r];
     const luas = r.jenis === "void" ? `${fmtUkur(r.w)} × ${fmtUkur(r.h)}` : `${fmtUkur(potongan.reduce((s, o) => s + o.w * o.h, 0))} m²`;
-    out.push(`<text x="${lx}" y="${ly + 0.27}" font-size="0.19" text-anchor="middle" fill="${built ? "#666" : "#aaa"}" ${halo}>${luas}${built ? "" : " · tahap " + r.tahap}</text>`);
+    const dak = !built && JENIS_BERPELAT.includes(r.jenis) && tahapPelat(r) <= state.tahap ? " · dak sudah dicor" : "";
+    out.push(`<text x="${lx}" y="${ly + 0.27}" font-size="0.19" text-anchor="middle" fill="${built ? "#666" : "#aaa"}" ${halo}>${luas}${built ? "" : " · tahap " + r.tahap + dak}</text>`);
     if (built) out.push(`<circle cx="${lx}" cy="${ly + 0.44}" r="0.06" fill="${TAHAP[r.tahap].warna}"/>`);
   }
 
@@ -302,12 +327,12 @@ export function gambarDenah(svg, state) {
   const sama = (a, b) => Math.abs(a - b) < 1e-6;
   const xs = (f) => [0, W, ...dim.filter(f).flatMap((r) => [r.x, r.x + r.w])];
   const ys = (f) => [0, H, ...dim.filter(f).flatMap((r) => [r.y, r.y + r.h])];
-  out.push(garisRantai(xs((r) => sama(r.y, 0)), "h", -0.75, 0));
+  if (lt > 0) out.push(garisRantai(xs((r) => sama(r.y, 0)), "h", -0.75, 0));
   out.push(garisRantai([0, W], "h", -1.35, 0));
-  out.push(garisRantai(xs((r) => sama(r.y + r.h, H)), "h", H + 0.85, H));
-  out.push(garisRantai(ys((r) => sama(r.x, 0)), "v", -0.75, 0));
+  if (lt > 0) out.push(garisRantai(xs((r) => sama(r.y + r.h, H)), "h", H + 0.85, H));
+  if (lt > 0) out.push(garisRantai(ys((r) => sama(r.x, 0)), "v", -0.75, 0));
   out.push(garisRantai([0, H], "v", -1.35, 0));
-  out.push(garisRantai(ys((r) => sama(r.x + r.w, W)), "v", W + 0.85, W));
+  if (lt > 0) out.push(garisRantai(ys((r) => sama(r.x + r.w, W)), "v", W + 0.85, W));
 
   // 10. keterangan: arah jalan, judul, skala
   // penunjuk utara (utara = atas gambar)
@@ -318,7 +343,7 @@ export function gambarDenah(svg, state) {
   out.push(JALAN === "kanan"
     ? `<text x="${W + 1.7}" y="${H / 2}" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05" transform="rotate(90 ${W + 1.7} ${H / 2})">▲ DEPAN · JALAN (TIMUR)</text>`
     : `<text x="${W / 2}" y="-2.15" font-size="0.26" text-anchor="middle" fill="#555" letter-spacing="0.05">▲ DEPAN · JALAN</text>`);
-  out.push(`<text x="${W}" y="${H + 1.85}" font-size="0.34" font-weight="700" text-anchor="end" fill="#222">${lt === 3 ? "DENAH ROOFTOP (LANTAI 3)" : "DENAH LANTAI " + lt}</text>`);
+  out.push(`<text x="${W}" y="${H + 1.85}" font-size="0.34" font-weight="700" text-anchor="end" fill="#222">${lt === 0 ? "DENAH PONDASI & SLOOF" : lt === 3 ? "DENAH ROOFTOP (LANTAI 3)" : "DENAH LANTAI " + lt}</text>`);
   out.push(`<text x="${W}" y="${H + 2.2}" font-size="0.2" text-anchor="end" fill="#777">${TAHAP[state.tahap].nama} · satuan meter</text>`);
   for (let i = 0; i < 4; i++)
     out.push(`<rect x="${i}" y="${H + 1.6}" width="1" height="0.1" fill="${i % 2 ? "#fff" : "#333"}" stroke="#333" stroke-width="0.012"/>`,

@@ -3,9 +3,10 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN, TINGGI_PARAPET, MATERIAL_DINDING, PARTISI, partisiDi } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN, TINGGI_PARAPET, MATERIAL_DINDING,
+  JENIS_BERPELAT, tahapPelat } from "./data.js";
 import { modelDinding, overlap, tiangPendopo } from "./model.js";
-import { KOLOM, BALOK, WARNA_BALOK, cariDinding, lantaiTampil } from "./struktur.js";
+import { KOLOM, BALOK, WARNA_BALOK, WARNA_KOLOM, WARNA_PONDASI, lantaiTampil, warnaDindingStruktur } from "./struktur.js";
 
 // 2D (x, y) -> 3D (x, z). Dilihat dari atas, sumbu 3D sama persis dengan denah
 // (x ke kanan, z ke bawah gambar), jadi model tidak tercermin.
@@ -73,13 +74,14 @@ export function buat3D(host) {
     kolom: new THREE.MeshStandardMaterial({ color: "#d8d6d0" }),
     tangga: new THREE.MeshStandardMaterial({ color: "#c9a878" }),
   };
-  // mode struktur: warna material dinding (bata merah / hebel), beton, dan versi transparan
-  const matMaterial = {}, matPerhatian = new THREE.MeshStandardMaterial({ color: "#d62828" });
-  const matPartisi = new THREE.MeshStandardMaterial({ color: PARTISI.material.warna });
-  for (const [lt, m] of Object.entries(MATERIAL_DINDING)) matMaterial[lt] = new THREE.MeshStandardMaterial({ color: m.warna });
-  const matKolom = new THREE.MeshStandardMaterial({ color: "#9e9b94", roughness: 0.9 });
-  const matBalok = {};
-  for (const [j, c] of Object.entries(WARNA_BALOK)) matBalok[j] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
+  // mode struktur: warna persis sama dengan denah 2D (sedikit emissive supaya tidak gelap oleh bayangan)
+  const cacheWarna = new Map();
+  const warnaMat = (c) => {
+    if (!cacheWarna.has(c))
+      cacheWarna.set(c, new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, roughness: 0.85 }));
+    return cacheWarna.get(c);
+  };
+  mat.dak = new THREE.MeshStandardMaterial({ color: "#bdb9b0", roughness: 0.95 });
   const transparan = new Map();
   function tembus(material, opacity) {
     const k = material.uuid + opacity;
@@ -301,11 +303,10 @@ export function buat3D(host) {
     for (const lantai of [1, 2, 3].filter((l) => l <= lantaiMaks)) {
       const base = (lantai - 1) * TINGGI_LANTAI;
       const m = modelDinding(RUANG, BUKAAN, lantai, dibangun);
-      const matDinding = (tahap) => (state.struktur3d ? matMaterial[lantai] : state.warnaTahap ? matTahap[tahap] : mat.plester);
+      const matDinding = (tahap) => (state.struktur3d ? warnaMat(MATERIAL_DINDING[lantai].warna) : state.warnaTahap ? matTahap[tahap] : mat.plester);
       for (const d of m.dinding) {
-        const r = state.struktur3d && cariDinding(lantai, d.o, d.pos, d.a, d.b);
-        const partisi = state.struktur3d && partisiDi(lantai, d.o, d.pos, (d.a + d.b) / 2);
-        const w = potongDinding(d.o, d.pos, d.a, d.b, base, 0, tinggiDinding, r?.perluPerhatian ? matPerhatian : partisi ? matPartisi : matDinding(d.tahap));
+        const material = state.struktur3d ? warnaMat(warnaDindingStruktur(lantai, d)) : matDinding(d.tahap);
+        const w = potongDinding(d.o, d.pos, d.a, d.b, base, 0, tinggiDinding, material);
         if (w) { w.userData.dinding = true; grupUntuk(grup, d.tahap, lantai).add(w); }
       }
       for (const b of m.bukaan) {
@@ -326,7 +327,7 @@ export function buat3D(host) {
         }
       }
       for (const r of m.parapet) {
-        const w = potongDinding(r.o, r.pos, r.a, r.b, base, 0, TINGGI_PARAPET, state.struktur3d ? matMaterial[lantai] : mat.plester);
+        const w = potongDinding(r.o, r.pos, r.a, r.b, base, 0, TINGGI_PARAPET, state.struktur3d ? warnaMat(warnaDindingStruktur(lantai, r)) : mat.plester);
         w.userData.dinding = true;
         grupUntuk(grup, r.tahap, lantai).add(w);
       }
@@ -340,6 +341,20 @@ export function buat3D(host) {
     for (const r of RUANG) {
       if (r.lantai > lantaiMaks) continue;
       const built = dibangun(r);
+      // pelat (dak) lantai atas sudah dicor satu tahap lebih awal dari ruangannya;
+      // bukaan void / lubang tangga diberi atap sementara sampai ruangannya dibangun
+      if (!built && r.lantai >= 2 && tahapPelat(r) <= state.tahap) {
+        const y0 = (r.lantai - 1) * TINGGI_LANTAI, gp = grupUntuk(grup, tahapPelat(r), r.lantai - 1);
+        if (JENIS_BERPELAT.includes(r.jenis)) {
+          const dak = box(r.w, TEBAL_PELAT, r.h, mat.dak);
+          dak.position.set(r.x + r.w / 2, y0 + TEBAL_PELAT / 2, Z(r.y + r.h / 2));
+          gp.add(dak);
+        } else if (r.jenis === "void" && !state.tanpaAtap) {
+          const atap = box(r.w, 0.05, r.h, mat.atap);
+          atap.position.set(r.x + r.w / 2, y0 + TEBAL_PELAT + 0.03, Z(r.y + r.h / 2));
+          gp.add(atap);
+        }
+      }
       if (!built && !state.ghost) continue;
       const base = (r.lantai - 1) * TINGGI_LANTAI;
       const cx = r.x + r.w / 2, cz = Z(r.y + r.h / 2);
@@ -402,7 +417,10 @@ export function buat3D(host) {
         pelat.position.set(cx, base + TEBAL_PELAT / 2, cz);
         g.add(pelat);
       }
-      const diAtas = RUANG.filter((o) => o.lantai === r.lantai + 1 && dibangun(o) && overlap(o, r));
+      const diAtasDibangun = RUANG.filter((o) => o.lantai === r.lantai + 1 && dibangun(o) && overlap(o, r));
+      // tertutup dak / atap sementara lantai atas → tidak perlu atap sendiri
+      const diAtas = RUANG.filter((o) => o.lantai === r.lantai + 1 && overlap(o, r) && (dibangun(o) ||
+        (tahapPelat(o) <= state.tahap && (JENIS_BERPELAT.includes(o.jenis) || o.jenis === "void"))));
       if (["ruang", "mezanin", "void"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap && state.potong !== r.lantai) {
         const atap = box(r.w + 0.3, 0.1, r.h + 0.3, mat.atap);
         atap.position.set(cx, base + TINGGI_LANTAI + 0.05, cz);
@@ -417,7 +435,7 @@ export function buat3D(host) {
           if (o) g.add(o);
         }
       }
-      if (!diAtas.length && r.label !== false) {
+      if (!diAtasDibangun.length && r.label !== false) {
         const t = r.jenis === "terbuka" ? 0.3 : r.jenis === "rooftop" ? TINGGI_PARAPET : TINGGI_LANTAI;
         g.add(label(r.nama, cx, base + t + 0.4, cz));
       }
@@ -429,28 +447,40 @@ export function buat3D(host) {
         if (lt > lantaiMaks || lt > state.tahap) continue;
         const [b, h] = k.dim[lt].map((v) => v / 100), base = (lt - 1) * TINGGI_LANTAI;
         const t = k.tinggi ? k.tinggi : TINGGI_LANTAI, y0 = k.tinggi ? base + TEBAL_PELAT : base;
-        const m = box(b, t, h, state.struktur3d ? matKolom : mat.kolom);
+        const m = box(b, t, h, state.struktur3d ? warnaMat(WARNA_KOLOM) : mat.kolom);
         m.position.set(k.x, y0 + t / 2, Z(k.y));
         m.userData.struktur = true;
         grupUntuk(grup, lt, lt).add(m);
       }
     }
+    // pondasi telapak + pedestal (tahap 0, di bawah tanah) — mode struktur
     if (state.struktur3d)
-      for (const b of BALOK) {
-        const lt = lantaiTampil(b);
-        if (b.tahap > state.tahap || lt > lantaiMaks) continue;
-        const [lebar, tinggi] = b.dim.map((v) => v / 100);
-        const atas = b.jenis === "sloof" ? 0.02 : b.elev != null ? b.elev : (b.level - 1) * TINGGI_LANTAI + TEBAL_PELAT;
-        const mid = (b.a + b.b) / 2;
-        const m = b.o === "h" ? box(b.L, tinggi, lebar, matBalok[b.jenis]) : box(lebar, tinggi, b.L, matBalok[b.jenis]);
-        m.position.set(b.o === "h" ? mid : b.pos, atas - tinggi / 2, Z(b.o === "h" ? b.pos : mid));
-        m.userData.struktur = true;
-        grupUntuk(grup, b.tahap, Math.max(1, b.level - (b.jenis === "sloof" ? 0 : 1))).add(m);
+      for (const k of KOLOM.filter((k) => k.pondasi)) {
+        const s = k.pondasi, [b, h] = k.dim[1].map((v) => v / 100);
+        const tapak = box(s, 0.3, s, warnaMat(WARNA_PONDASI));
+        tapak.position.set(k.x, -1.35, Z(k.y));
+        const pedestal = box(b, 1.2, h, warnaMat(WARNA_KOLOM));
+        pedestal.position.set(k.x, -0.6, Z(k.y));
+        tapak.userData.struktur = pedestal.userData.struktur = true;
+        grupUntuk(grup, 0, 1).add(tapak, pedestal);
       }
+    // sloof selalu tampil (tahap 0); balok lain di mode struktur
+    for (const b of BALOK) {
+      const lt = lantaiTampil(b);
+      if (b.tahap > state.tahap || lt > lantaiMaks || (!state.struktur3d && b.jenis !== "sloof")) continue;
+      const [lebar, tinggi] = b.dim.map((v) => v / 100);
+      const atas = b.jenis === "sloof" ? 0.02 : b.elev != null ? b.elev : (b.level - 1) * TINGGI_LANTAI + TEBAL_PELAT;
+      const mid = (b.a + b.b) / 2;
+      const mb = state.struktur3d ? warnaMat(WARNA_BALOK[b.jenis]) : mat.kolom;
+      const m = b.o === "h" ? box(b.L, tinggi, lebar, mb) : box(lebar, tinggi, b.L, mb);
+      m.position.set(b.o === "h" ? mid : b.pos, atas - tinggi / 2, Z(b.o === "h" ? b.pos : mid));
+      m.userData.struktur = true;
+      grupUntuk(grup, b.tahap, Math.max(1, b.level - (b.jenis === "sloof" ? 0 : 1))).add(m);
+    }
 
     // mode struktur: semua selain kolom/balok dibuat tembus pandang
     ground.material.opacity = state.struktur3d ? 0.55 : 1;
-    const matDindingSemua = new Set([...Object.values(matMaterial), ...Object.values(matTahap), mat.plester, matPerhatian, matPartisi]);
+    const matDindingSemua = new Set([...cacheWarna.values(), ...Object.values(matTahap), mat.plester]);
     if (state.struktur3d)
       for (const g of grup.values())
         g.traverse((o) => {
