@@ -1,34 +1,42 @@
 # tata-home
 
-Visualisasi **denah rumah bertumbuh** (2D + 3D) dalam satu file HTML.
+Visualisasi **denah rumah bertumbuh** (2D + 3D) untuk rumah 10 × 12 m.
 
-- **2D**: SVG, skala meter, pilih Lantai 1 / Lantai 2
-- **3D**: [Three.js](https://threejs.org) — dinding di-extrude dari data denah, ruangan tahap baru "tumbuh" dengan animasi
-- Slider **Tahap** untuk melihat rumah dari tahap 1 → tahap akhir; rencana tahap berikutnya tampil transparan
-- Ringkasan luas per tahap dan kumulatif
+- **Denah 2D** (SVG, gaya gambar kerja): dinding tebal tersambung, pintu dengan busur bukaan,
+  jendela, pola lantai (keramik/parket/KM/beton), furnitur, garis ukuran berantai di 4 sisi,
+  skala batang. Bisa diunduh sebagai SVG.
+- **Model 3D** ([Three.js](https://threejs.org)): dinding, pintu & jendela diambil dari model yang sama
+  dengan denah 2D, jadi bukaan di denah otomatis jadi lubang berkaca di 3D.
+- Slider **Tahap**: rumah "tumbuh" dari tahap 1 ke tahap akhir; rencana tahap berikutnya tampil transparan.
+- Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
 
 ## Menjalankan
 
-Buka `index.html` di browser (butuh internet untuk memuat Three.js dari CDN), atau:
+Karena memakai ES modules, buka lewat web server (bukan double-click file):
 
 ```sh
 python3 -m http.server 8000   # lalu buka http://localhost:8000
 ```
 
-## Mengubah denah
+Preview GitHub Pages: https://adepanges.github.io/tata-home/
 
-Edit konstanta di bagian `DATA DENAH` pada `index.html`:
+## Struktur
 
-- `LAHAN` — ukuran lahan (m)
-- `TAHAP` — nama & warna tiap tahap
-- `RUANG` — daftar ruangan: `x, y, w, h` (m, y=0 = sisi depan/jalan), `lantai`, `tahap`,
-  `jenis`:
-  - `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport/taman), `"balkon"` lantai + railing
-  - `"tangga"` tangga; `tanggaL(rect)` menghitung tangga L (anak tangga, bordes, optrede) di dalam area void
-  - `"void"` lubang tembus dua lantai, `"mezanin"` lantai atas di tepi void (railing menghadap void)
-  - opsi `mobil: n` untuk menggambar n mobil di carport
-- `VOID` — ukuran void di atas living room (4 → 4×4 m, 3 → 3×3 m); tangga L ikut menyesuaikan
+| File | Isi |
+|---|---|
+| `js/data.js` | **Data denah**: lahan, tahap, ruangan, pintu & jendela, tangga L |
+| `js/model.js` | Model dinding bersama: gabung dinding berimpit, potong bukaan, railing void |
+| `js/denah2d.js` | Render denah 2D (SVG) |
+| `js/simbol.js` | Simbol furnitur tampak atas (kasur, sofa, dapur, kloset, mobil, …) |
+| `js/tampilan3d.js` | Render model 3D |
+| `js/app.js` | Kontrol UI & ringkasan luas |
 
-## Preview
+## Mengubah denah (`js/data.js`)
 
-GitHub Pages: https://adepanges.github.io/tata-home/
+- `RUANG`: tiap ruangan `x, y, w, h` (m, y=0 = sisi depan/jalan), `lantai`, `tahap`, `jenis`,
+  `finish` (`keramik` | `parket` | `basah` | `beton`), `perabot` (`[tipe, cx, cy, rotasi, w?, h?]`), `label` (opsional)
+  - `jenis`: `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport), `"balkon"`,
+    `"tangga"` (bentuk L dihitung `tanggaL()`), `"void"`, `"mezanin"` (railing ke arah void)
+- `BUKAAN`: pintu/jendela di dinding `garis` `"h"` (y=pos) / `"v"` (x=pos), rentang `a..b`,
+  `tipe` `pintu` | `bukaan` | `jendela` | `boven` | `jendelaTinggi`; pintu punya `engsel` (`"a"`/`"b"`) dan `buka` (+1/−1)
+- `VOID`: ukuran void (4 → 4×4 m, 3 → 3×3 m); tangga L ikut menyesuaikan
