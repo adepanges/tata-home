@@ -6,12 +6,13 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN } from "./data.js";
 import { modelDinding, overlap } from "./model.js";
 
-// 2D (x, y) -> 3D (x, z). Depan lahan (y=0) menghadap kamera awal.
-const Z = (y) => LAHAN.h - y;
+// 2D (x, y) -> 3D (x, z). Dilihat dari atas, sumbu 3D sama persis dengan denah
+// (x ke kanan, z ke bawah gambar), jadi model tidak tercermin.
+const Z = (y) => y;
 const WARNA_FINISH = { keramik: "#f1ede5", parket: "#d9bf94", basah: "#dde7ea", beton: "#cfcdc8" };
 // kamera awal memandang dari arah jalan
-const KAMERA_AWAL = JALAN === "kanan" ? [LAHAN.w + 12, 13, LAHAN.h + 8] : [LAHAN.w / 2 + 9, 14, LAHAN.h + 12];
-const KAMERA_ATAS = JALAN === "kanan" ? [LAHAN.w + 6, 20, LAHAN.h + 4] : [LAHAN.w / 2 + 4, 20, LAHAN.h + 7];
+const KAMERA_AWAL = JALAN === "kanan" ? [LAHAN.w + 11, 13, LAHAN.h + 7] : [LAHAN.w / 2 + 9, 14, -12];
+const KAMERA_ATAS = JALAN === "kanan" ? [LAHAN.w + 5, 20, LAHAN.h + 3] : [LAHAN.w / 2 + 4, 20, -7];
 
 function box(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);

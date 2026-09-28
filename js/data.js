@@ -98,28 +98,34 @@ export const RUANG = [
   { nama: "Tangga", ...VOID_RECT, lantai: 1, tahap: 2, jenis: "tangga",
     ...tanggaL(VOID_RECT, { transpose: true, flipX: true, flipY: true }) },
   { nama: "Void", ...VOID_RECT, lantai: 2, tahap: 2, jenis: "void" },
-  { nama: "Mezanin", x: VOID, y: 0, w: 6 - VOID, h: 4, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket" },
+  // dapur kering terbuka ke void; tangga tiba di sini
+  { nama: "Dapur Kering", x: VOID, y: 0, w: 7 - VOID, h: 4, lantai: 2, tahap: 2, jenis: "mezanin", finish: "keramik",
+    label: [5.3, 2.4],
+    perabot: [["mesinCuci", 6.6, 0.5, 0], ["counter", 6.6, 2.2, 0, 0.6, 2.4], ["sink", 6.6, 1.8, 90], ["kompor", 6.6, 2.9, 90]] },
   { nama: "Mezanin", x: 0, y: VOID, w: VOID, h: 4 - VOID, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket" },
-  { nama: "Koridor", x: 0, y: 4, w: 12, h: 1, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [7.5, 4.55] },
-  { nama: "Selasar", x: 4, y: 5, w: 1, h: 5, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [4.5, 9.3] },
-  { nama: "R. Santai", x: 6, y: 0, w: 3, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [7.5, 2.75],
-    perabot: [["sofa", 7.5, 0.55, 0], ["mejaTamu", 7.5, 1.7, 0, 1.0, 0.5], ["tv", 7.0, 3.7, 180]] },
-  { nama: "K. Tidur Utama", x: 9, y: 0, w: 3, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [10.6, 3.35],
-    perabot: [["kasur", 10.9, 1.9, 90], ["lemari", 9.4, 1.6, 270, 1.6, 0.6]] },
-  { nama: "K. Tidur 2", x: 0, y: 5, w: 4, h: 3, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [1.6, 5.45],
-    perabot: [["kasur", 1.1, 6.7, 270], ["lemari", 3.0, 7.6, 180, 1.6, 0.6]] },
-  { nama: "KM Atas", x: 0, y: 8, w: 4, h: 2, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
-    label: [2.6, 8.55],
-    perabot: [["kloset", 0.8, 9.55, 180], ["wastafel", 0.6, 8.3, 0], ["shower", 2.0, 9.45, 0]] },
-  { nama: "K. Tidur 3", x: 5, y: 5, w: 3.5, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [6.9, 9.35],
-    perabot: [["kasur", 7.4, 7.5, 90], ["lemari", 5.4, 8.5, 270, 1.6, 0.6]] },
-  { nama: "K. Tidur 4", x: 8.5, y: 5, w: 3.5, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [10.4, 6.6],
-    perabot: [["kasur", 10.25, 8.9, 180], ["lemari", 8.9, 7.5, 270, 1.6, 0.6]] },
+  { nama: "Koridor", x: 0, y: 4, w: 8.5, h: 1, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [5.6, 4.45] },
+  { nama: "Studio Kerja", x: 7, y: 0, w: 3.5, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
+    label: [8.7, 2.6],
+    perabot: [["mejaKerja", 8.5, 0.45, 0, 2.0, 0.6], ["kursi", 8.5, 1.05, 180], ["rak", 7.3, 2.4, 0, 0.35, 1.8]] },
+  { nama: "Balkon", x: 10.5, y: 0, w: 1.5, h: 4, lantai: 2, tahap: 2, jenis: "balkon", finish: "keramik",
+    label: [11.25, 3.2],
+    perabot: [["kursi", 11.25, 0.8, 90], ["kursi", 11.25, 1.6, 90]] },
+  { nama: "K. Tidur Utama", x: 8.5, y: 4, w: 3.5, h: 6, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
+    label: [10.4, 6.4],
+    perabot: [["kasur", 10.5, 8.9, 180, 1.8, 2.0], ["lemari", 8.9, 6.0, 270, 2.0, 0.6]] },
+  { nama: "KM Dalam", x: 6.5, y: 7.5, w: 2, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
+    label: [7.3, 8.5],
+    perabot: [["kloset", 7.0, 9.55, 180], ["shower", 7.9, 9.45, 0], ["wastafel", 6.8, 7.85, 0]] },
+  { nama: "KM", x: 6.5, y: 5, w: 2, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
+    label: [7.3, 6.2],
+    perabot: [["kloset", 7.0, 7.05, 180], ["shower", 8.0, 6.95, 0], ["wastafel", 8.25, 5.6, 90]] },
+  { nama: "K. Anak", x: 0, y: 5, w: 3.2, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
+    label: [1.3, 7.5],
+    perabot: [["kasur", 1.1, 6.0, 270, 1.0, 2.0], ["mejaKerja", 1.0, 9.6, 180, 1.2, 0.5], ["kursi", 1.0, 9.0, 0],
+              ["lemari", 2.85, 7.6, 90, 1.6, 0.6]] },
+  { nama: "K. Tamu", x: 3.2, y: 5, w: 3.3, h: 5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
+    label: [4.6, 6.5],
+    perabot: [["kasur", 4.85, 8.9, 180], ["lemari", 6.15, 6.5, 90, 1.6, 0.6]] },
 ].filter((r) => r.w > 0 && r.h > 0);
 
 // ================== PINTU & JENDELA ==================
@@ -145,20 +151,19 @@ export const BUKAAN = [
   { lantai: 1, tipe: "jendela", garis: "v", pos: 10,  a: 7.6, b: 9.4 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 7.5, b: 9.3 },
   // lantai 2
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,   a: 8.0, b: 8.8, engsel: "b", buka: -1 },  // r. santai
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,   a: 9.3, b: 10.1, engsel: "a", buka: -1 }, // KT utama
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,   a: 3.0, b: 3.8, engsel: "b", buka: +1 },  // KT 2
-  { lantai: 2, tipe: "pintu",   garis: "v", pos: 4,   a: 8.3, b: 9.0, engsel: "a", buka: -1 },  // KM atas
-  { lantai: 2, tipe: "pintu",   garis: "v", pos: 5,   a: 5.3, b: 6.1, engsel: "a", buka: +1 },  // KT 3
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,   a: 9.4, b: 10.2, engsel: "a", buka: +1 }, // KT 4
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,   a: 6.8, b: 8.2 },
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,   a: 9.8, b: 11.2 },
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,  a: 1.0, b: 3.0 },
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 0,   a: 5.8, b: 7.2 },
-  { lantai: 2, tipe: "boven",   garis: "h", pos: 10,  a: 2.8, b: 3.4 },
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 10,  a: 6.0, b: 7.5 },
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,  a: 6.0, b: 7.5 },
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,  a: 4.15, b: 4.85 },
+  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,    a: 7.3, b: 8.1, engsel: "a", buka: -1 },  // studio kerja
+  { lantai: 2, tipe: "pintu",   garis: "v", pos: 10.5, a: 1.6, b: 2.5, engsel: "a", buka: +1 },  // ke balkon
+  { lantai: 2, tipe: "pintu",   garis: "v", pos: 8.5,  a: 4.1, b: 4.9, engsel: "a", buka: +1 },  // K. utama
+  { lantai: 2, tipe: "pintu",   garis: "v", pos: 8.5,  a: 8.0, b: 8.7, engsel: "a", buka: -1 },  // KM dalam
+  { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 6.8, b: 7.5, engsel: "a", buka: +1 },  // KM
+  { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 2.2, b: 3.0, engsel: "b", buka: +1 },  // K. anak
+  { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 3.5, b: 4.3, engsel: "a", buka: +1 },  // K. tamu
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 5.0, b: 6.2 },
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 7.8, b: 9.2 },
+  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,   a: 5.2, b: 7.2 },
+  { lantai: 2, tipe: "boven",   garis: "h", pos: 10,   a: 7.2, b: 7.8 },
+  { lantai: 2, tipe: "jendela", garis: "v", pos: 0,    a: 7.2, b: 8.8 },
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 5.8, b: 6.4 },
   { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.5, b: 3.5 },  // cahaya ke void
   { lantai: 2, tipe: "jendelaTinggi", garis: "h", pos: 0, a: 0.5, b: 3.5 },
 ];
