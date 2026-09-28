@@ -148,13 +148,13 @@ export const RUANG = [
   { nama: "KM", x: 4, y: 8, w: 2, h: 2, lantai: 1, tahap: 1, jenis: "ruang", finish: "basah",
     label: [5.0, 8.85],
     perabot: [["shower", 4.55, 9.45, 0], ["kloset", 5.55, 9.5, 90], ["wastafel", 5.75, 8.5, 90]] },
-  { nama: "Studio", x: 6, y: 6.5, w: 4, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "parket",
-    label: [8.6, 7.6],
-    perabot: [["mejaKerja", 8.4, 9.6, 180, 2.0, 0.6], ["kursi", 8.4, 8.95, 0], ["sofa", 6.55, 8.5, 270, 1.8, 0.8], ["acIndoor", 9.88, 7.0, 90]] },
-  // ruang kosong 2 m di depan studio untuk gerbang besar (menyambung dengan garasi)
+  { nama: "Studio", x: 6, y: 6.5, w: 4.5, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "parket",
+    label: [8.85, 7.6],
+    perabot: [["mejaKerja", 8.65, 9.6, 180, 2.0, 0.6], ["kursi", 8.65, 8.95, 0], ["sofa", 6.55, 8.5, 270, 1.8, 0.8], ["acIndoor", 10.38, 7.0, 90]] },
+  // ruang kosong 1,5 m di depan studio untuk gerbang (menyambung dengan garasi); studio dimajukan 0,5 m ke timur
   // AC outdoor studio: di dinding halaman (braket), pipa ±0,5 m
-  { nama: "Halaman", x: 10, y: 6.5, w: 2, h: 3.5, lantai: 1, tahap: 1, jenis: "terbuka", finish: "beton",
-    perabot: [["acOutdoor", 10.25, 7.0, 270]] },
+  { nama: "Halaman", x: 10.5, y: 6.5, w: 1.5, h: 3.5, lantai: 1, tahap: 1, jenis: "terbuka", finish: "beton",
+    perabot: [["acOutdoor", 10.75, 7.0, 270]] },
 
   // ---- Tahap 2: tangga L di void + lantai 2 full 12 × 10 m (usulan) ----
   // tangga: naik menyusuri dinding kiri, bordes di pojok kiri-atas, lalu menyusuri dinding atas ke mezanin
@@ -269,7 +269,7 @@ export const BUKAAN = [
   { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 7.6, b: 8.9 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 4.6, b: 5.9 },
   { lantai: 1, tipe: "boven",   garis: "h", pos: 10,  a: 4.6, b: 5.4 },
-  { lantai: 1, tipe: "jendela", garis: "v", pos: 10,  a: 7.6, b: 9.4 },
+  { lantai: 1, tipe: "jendela", garis: "v", pos: 10.5, a: 7.6, b: 9.4 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 8.4, b: 9.8 },
   // lantai 2
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,    a: 7.1, b: 7.9, engsel: "a", buka: -1 },  // ruang kerja (solid-core + seal)

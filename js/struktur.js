@@ -138,7 +138,7 @@ V(1, 8, 6.5, 10, { jenis: "sloof" });
 V(1, 12, 0, 6.5, { jenis: "sloof", ket: "pengikat pondasi di bawah pintu masuk garasi" });
 V(1, 12, 6.5, 10, { jenis: "sloof" });
 H(1, 8, 4, 6, { jenis: "sloof", ket: "dinding KM" });
-V(1, 10, 6.5, 10, { jenis: "sloof", ket: "dinding studio | halaman" });
+V(1, 10.5, 6.5, 10, { jenis: "sloof", ket: "dinding studio | halaman" });
 
 // ================== DINDING (dari modelDinding) ==================
 const semua = () => true;
