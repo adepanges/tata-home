@@ -88,7 +88,7 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 //   "ruang"   = berdinding penuh + atap
 //   "terbuka" = hanya lantai (carport, taman)
 //   "balkon"  = lantai + railing
-//   "tangga"  = anak tangga naik ke arah `arah` ("belakang" / "depan")
+//   "tangga"  = tangga; bentuk & anak tangganya dihitung oleh tanggaL()
 //   "mezanin" = lantai atas di tepi void: railing di sisi yang menghadap void
 //   "void"    = lubang tembus 2 lantai: tanpa pelat lantai, dinding luar + atap
 // Opsional: mobil: n  -> gambar n mobil (cek muat/tidak)
@@ -102,26 +102,55 @@ const TAHAP = {
 
 // Ukuran void di atas living room (ganti ke 3 untuk void 3×3)
 const VOID = 4;
-const LIV = { x: 4, y: 5.5, w: 6, h: 5 };  // living room
+const LIV = { x: 4, y: 5.5, w: 6, h: 6.5 };  // living room
+// void di pojok kanan-belakang living room; tangga L ada di dalamnya
+const VOID_RECT = { x: LIV.x + LIV.w - VOID, y: LIV.y + LIV.h - VOID, w: VOID, h: VOID };
+
+// Tangga L di dalam void: naik menyusuri dinding belakang (ke kanan),
+// bordes di pojok kanan-belakang, lalu naik menyusuri dinding kanan (ke depan)
+// dan tiba di selasar lantai 2 pada tepi depan void.
+function tanggaL(v, lebar = 1, optrede = 0.175, antrede = 0.27) {
+  const N = Math.round(TINGGI_LANTAI / optrede);  // jumlah optrede sampai lantai 2
+  const naik = TINGGI_LANTAI / N;
+  const bordes = { x: v.x + v.w - lebar, y: v.y + v.h - lebar, w: lebar, h: lebar };
+  const len2 = bordes.y - v.y;
+  const n2 = Math.max(1, Math.round(len2 / antrede)), d2 = len2 / n2;
+  const n1 = Math.max(1, N - 2 - n2);
+  const d1 = Math.min(antrede, (v.w - lebar) / n1);
+  const x0 = bordes.x - n1 * d1;
+  const anak = [];
+  for (let i = 1; i <= n1; i++)
+    anak.push({ x: x0 + (i - 1) * d1, y: bordes.y, w: d1, h: lebar, top: i * naik });
+  anak.push({ ...bordes, top: (n1 + 1) * naik, bordes: true });
+  for (let j = 1; j <= n2; j++)
+    anak.push({ x: bordes.x, y: bordes.y - j * d2, w: lebar, h: d2, top: (n1 + 1 + j) * naik });
+  const c = lebar / 2;
+  return {
+    anak, jumlah: N, naik,
+    panah: [[x0 + 0.1, bordes.y + c], [bordes.x + c, bordes.y + c], [bordes.x + c, v.y + 0.1]],
+  };
+}
 
 const RUANG = [
-  // ---- Tahap 1, lantai 1 ----
+  // ---- Tahap 1, lantai 1 (full 10 × 12 m) ----
   { nama: "Carport (2 mobil)", x: 4, y: 0, w: 6, h: 5.5, lantai: 1, tahap: 1, jenis: "terbuka", mobil: 2 },
   { nama: "Studio",       x: 0, y: 0,   w: 4, h: 4.5, lantai: 1, tahap: 1, jenis: "ruang" },
-  { nama: "Dapur",        x: 0, y: 4.5, w: 4, h: 4,   lantai: 1, tahap: 1, jenis: "ruang" },
-  { nama: "Toilet",       x: 0, y: 8.5, w: 2, h: 2,   lantai: 1, tahap: 1, jenis: "ruang" },
-  { nama: "KM Kecil",     x: 2, y: 8.5, w: 2, h: 2,   lantai: 1, tahap: 1, jenis: "ruang" },
-  { nama: "Living Room",  ...LIV,                       lantai: 1, tahap: 1, jenis: "ruang" },
-  { nama: "Taman Belakang", x: 0, y: 10.5, w: 10, h: 1.5, lantai: 1, tahap: 1, jenis: "terbuka" },
+  { nama: "Dapur",        x: 0, y: 4.5, w: 4, h: 5,   lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "Toilet",       x: 0, y: 9.5, w: 2, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "KM Kecil",     x: 2, y: 9.5, w: 2, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang" },
+  { nama: "Living Room",  ...LIV,                       lantai: 1, tahap: 1, jenis: "ruang", label: [6, 6.9] },
 
-  // ---- Tahap 2: tangga (di dalam living room) + lantai 2 (usulan) ----
-  { nama: "Tangga",       x: 4, y: 6.5, w: 1.2, h: 4, lantai: 1, tahap: 2, jenis: "tangga", arah: "belakang" },
-  { nama: "Void",         x: LIV.x + LIV.w - VOID, y: LIV.y + LIV.h - VOID, w: VOID, h: VOID, lantai: 2, tahap: 2, jenis: "void" },
+  // ---- Tahap 2: tangga L di void + lantai 2 full 10 × 12 m (usulan) ----
+  { nama: "Tangga L",     ...VOID_RECT, lantai: 1, tahap: 2, jenis: "tangga", ...tanggaL(VOID_RECT) },
+  { nama: "Void",         ...VOID_RECT, lantai: 2, tahap: 2, jenis: "void" },
   { nama: "Mezanin",      x: LIV.x, y: LIV.y, w: LIV.w - VOID, h: LIV.h, lantai: 2, tahap: 2, jenis: "mezanin" },
-  { nama: "Selasar",      x: LIV.x + LIV.w - VOID, y: LIV.y, w: VOID, h: LIV.h - VOID, lantai: 2, tahap: 2, jenis: "mezanin" },
+  { nama: "Selasar",      x: VOID_RECT.x, y: LIV.y, w: VOID, h: LIV.h - VOID, lantai: 2, tahap: 2, jenis: "mezanin" },
   { nama: "K. Tidur Utama", x: 0, y: 0,   w: 4, h: 4.5, lantai: 2, tahap: 2, jenis: "ruang" },
-  { nama: "K. Tidur 2",   x: 0, y: 4.5, w: 4, h: 4,   lantai: 2, tahap: 2, jenis: "ruang" },
-  { nama: "KM Atas",      x: 0, y: 8.5, w: 4, h: 2,   lantai: 2, tahap: 2, jenis: "ruang" },
+  { nama: "K. Tidur 2",   x: 0, y: 4.5, w: 4, h: 5,   lantai: 2, tahap: 2, jenis: "ruang" },
+  { nama: "KM Atas",      x: 0, y: 9.5, w: 4, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang" },
+  // di atas carport (carport jadi beratap, ditopang kolom)
+  { nama: "K. Tidur 3",   x: 4, y: 0,   w: 3, h: 5.5, lantai: 2, tahap: 2, jenis: "ruang" },
+  { nama: "R. Santai",    x: 7, y: 0,   w: 3, h: 5.5, lantai: 2, tahap: 2, jenis: "ruang" },
 ].filter((r) => r.w > 0 && r.h > 0);
 
 const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan
@@ -152,6 +181,10 @@ function render2D() {
   // ruangan lantai lain yang sudah dibangun: siluet tipis sebagai acuan
   for (const r of RUANG) {
     if (r.lantai === state.lantai || r.tahap > state.tahap) continue;
+    if (r.jenis === "tangga") {
+      for (const a of r.anak) out.push(`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="none" stroke="#bbb" stroke-width="0.02"/>`);
+      continue;
+    }
     out.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="none" stroke="#bbb" stroke-width="0.04"/>`);
   }
 
@@ -168,16 +201,9 @@ function render2D() {
       out.push(rect(`fill="#fff" fill-opacity="${built ? 0.7 : 0.2}" stroke="${built ? "#333" : c}" stroke-width="0.05" stroke-dasharray="0.25 0.15"`));
       out.push(`<path d="M${r.x} ${r.y}L${r.x + r.w} ${r.y + r.h}M${r.x + r.w} ${r.y}L${r.x} ${r.y + r.h}" stroke="${built ? "#999" : c}" stroke-width="0.04"/>`);
     } else if (r.jenis === "tangga") {
-      out.push(rect(built ? `fill="#fff" stroke="#333" stroke-width="0.05"` : `fill="${c}" fill-opacity="0.15" stroke="${c}" stroke-width="0.05" stroke-dasharray="0.2 0.1"`));
-      const n = anakTangga(r), sepanjangY = r.h >= r.w;
-      for (let i = 1; i < n; i++) {
-        const t = i / n;
-        out.push(sepanjangY
-          ? `<line x1="${r.x}" x2="${r.x + r.w}" y1="${r.y + t * r.h}" y2="${r.y + t * r.h}" stroke="${built ? "#666" : c}" stroke-width="0.02"/>`
-          : `<line y1="${r.y}" y2="${r.y + r.h}" x1="${r.x + t * r.w}" x2="${r.x + t * r.w}" stroke="${built ? "#666" : c}" stroke-width="0.02"/>`);
-      }
-      const naik = r.arah === "depan" ? [r.y + r.h - 0.3, r.y + 0.3] : [r.y + 0.3, r.y + r.h - 0.3];
-      out.push(`<line x1="${cx}" x2="${cx}" y1="${naik[0]}" y2="${naik[1]}" stroke="${built ? "#c33" : c}" stroke-width="0.05" marker-end="url(#panah)"/>`);
+      for (const a of r.anak)
+        out.push(`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${built ? (a.bordes ? "#eee" : "#fff") : c}" fill-opacity="${built ? 1 : 0.2}" stroke="${built ? "#555" : c}" stroke-width="0.03"/>`);
+      out.push(`<polyline points="${r.panah.map((p) => p.join(",")).join(" ")}" fill="none" stroke="${built ? "#c33" : c}" stroke-width="0.05" marker-end="url(#panah)"/>`);
     } else {
       const wall = r.jenis === "ruang" ? 0.15 : 0.06;
       const opa = r.jenis === "ruang" ? 0.85 : r.jenis === "mezanin" ? 0.6 : 0.4;
@@ -189,22 +215,24 @@ function render2D() {
       const lebar = 1.8, panjang = 4.4, jarak = (r.w - lebar * r.mobil) / (r.mobil + 1);
       out.push(`<rect x="${r.x + jarak + i * (lebar + jarak)}" y="${r.y + 0.4}" width="${lebar}" height="${panjang}" rx="0.35" fill="#fff" stroke="#888" stroke-width="0.04"/>`);
     }
-    const ty = r.mobil ? r.y + r.h - 0.25 : r.jenis === "tangga" ? r.y - 0.15 : cy;
+    const [lx, ty] = r.label || [cx, r.mobil ? r.y + r.h - 0.25 : cy];
     const fs = r.w < 2.5 ? 0.32 : 0.42;
     if (r.jenis === "tangga") {
-      const rot = r.h >= r.w ? `transform="rotate(-90 ${cx - 0.12} ${cy})"` : "";
-      out.push(`<text x="${cx - 0.12}" y="${cy}" ${rot} font-size="0.28" text-anchor="middle" dominant-baseline="middle" fill="${built ? "#c33" : "#888"}" paint-order="stroke" stroke="#fff" stroke-width="0.08">Tangga${built ? "" : " · T" + r.tahap}</text>`);
+      const [x0, y0] = r.panah[0];
+      const teks = (y, t) => `<text x="${x0 - 0.2}" y="${y}" font-size="0.28" text-anchor="end" fill="${built ? "#c33" : "#888"}" paint-order="stroke" stroke="#fff" stroke-width="0.08">${t}</text>`;
+      out.push(teks(y0 - 0.05, `${r.nama} ↑${built ? "" : " · T" + r.tahap}`));
+      out.push(teks(y0 + 0.3, `${r.jumlah} × ${(r.naik * 100).toFixed(1)} cm`));
       continue;
     }
-    out.push(`<text x="${cx}" y="${ty - 0.05}" font-size="${fs}" text-anchor="middle" fill="${built ? "#222" : "#888"}">${r.nama}</text>`);
+    out.push(`<text x="${lx}" y="${ty - 0.05}" font-size="${fs}" text-anchor="middle" fill="${built ? "#222" : "#888"}">${r.nama}</text>`);
     if (!r.mobil)
-      out.push(`<text x="${cx}" y="${ty + fs + 0.05}" font-size="0.3" text-anchor="middle" fill="${built ? "#555" : "#aaa"}">${fmt(r.w)}×${fmt(r.h)} m${built ? "" : " · T" + r.tahap}</text>`);
+      out.push(`<text x="${lx}" y="${ty + fs + 0.05}" font-size="0.3" text-anchor="middle" fill="${built ? "#555" : "#aaa"}">${fmt(r.w)}×${fmt(r.h)} m${built ? "" : " · T" + r.tahap}</text>`);
   }
   // di lantai 1: tandai posisi void di atas
   if (state.lantai === 1)
     for (const v of RUANG.filter((r) => r.jenis === "void")) {
       out.push(`<rect x="${v.x + 0.1}" y="${v.y + 0.1}" width="${v.w - 0.2}" height="${v.h - 0.2}" fill="none" stroke="#555" stroke-width="0.04" stroke-dasharray="0.15 0.1"/>`);
-      out.push(`<text x="${v.x + v.w / 2}" y="${v.y + v.h - 0.3}" font-size="0.28" text-anchor="middle" fill="#555">void ${v.w}×${v.h} m di atas</text>`);
+      out.push(`<text x="${v.x + 0.25}" y="${v.y + 0.5}" font-size="0.28" fill="#555" paint-order="stroke" stroke="#fff" stroke-width="0.06">void ${v.w}×${v.h} m di atas</text>`);
     }
   svg.innerHTML = `<defs><marker id="panah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c33"/></marker></defs>` + out.join("");
 }
@@ -251,6 +279,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(LAHAN.w / 2, 2, LAHAN.h / 2);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI / 2.05;
+window.denah3d = { camera, controls };  // untuk debug / screenshot dari console
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.4));
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -288,8 +317,15 @@ const overlap = (a, b) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const sudahDibangun = (o) => o.tahap <= state.tahap;
 
-function anakTangga(r) {
-  return Math.round(TINGGI_LANTAI / 0.18);  // optrede ±18 cm
+// Railing dibuka di titik tangga tiba (anak tangga teratas menempel sisi ini)
+function diUjungTangga(s, m) {
+  return RUANG.some((t) => {
+    if (t.jenis !== "tangga" || !sudahDibangun(t)) return false;
+    const a = t.anak[t.anak.length - 1];
+    return s.along === "x"
+      ? m > a.x && m < a.x + a.w && (Math.abs(a.y - s.pos) < 1e-6 || Math.abs(a.y + a.h - s.pos) < 1e-6)
+      : m > a.y && m < a.y + a.h && (Math.abs(a.x - s.pos) < 1e-6 || Math.abs(a.x + a.w - s.pos) < 1e-6);
+  });
 }
 
 // Pecah tiap sisi ruangan jadi segmen: "wall", "rail", atau "none".
@@ -313,7 +349,7 @@ function segmenSisi(r) {
         const n = tetangga.find((o) => s.along === "x"
           ? m > o.x && m < o.x + o.w && (Math.abs(o.y - s.pos) < 1e-6 || Math.abs(o.y + o.h - s.pos) < 1e-6)
           : m > o.y && m < o.y + o.h && (Math.abs(o.x - s.pos) < 1e-6 || Math.abs(o.x + o.w - s.pos) < 1e-6));
-        if (n) kind = r.jenis === "mezanin" && n.jenis === "void" ? "rail" : "none";
+        if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(s, m) ? "rail" : "none";
       }
       if (cur && cur.kind === kind) cur.b = Math.min(t + STEP, s.b);
       else hasil.push(cur = { ...s, a: t, b: Math.min(t + STEP, s.b), kind });
@@ -342,12 +378,9 @@ function buatRuang(r) {
   const cx = r.x + r.w / 2, cz = Z(r.y + r.h / 2);
 
   if (r.jenis === "tangga") {
-    const n = anakTangga(r), naik = TINGGI_LANTAI / n, d = r.h / n;
-    for (let i = 0; i < n; i++) {
-      const h = naik * (i + 1);
-      const yy = r.arah === "depan" ? r.y + r.h - d * (i + 0.5) : r.y + d * (i + 0.5);
-      const st = box(r.w, h, d, matLantai);
-      st.position.set(cx, h / 2, Z(yy));
+    for (const a of r.anak) {
+      const st = box(a.w, a.top, a.h, a.bordes ? matDinding : matLantai);
+      st.position.set(a.x + a.w / 2, a.top / 2, Z(a.y + a.h / 2));
       g.add(st);
     }
   } else if (r.jenis !== "void") {
@@ -374,6 +407,15 @@ function buatRuang(r) {
 
   // atap datar tipis jika tidak tertutup lantai di atasnya
   const diAtas = RUANG.filter((o) => o.lantai === r.lantai + 1 && sudahDibangun(o) && overlap(o, r));
+  // area terbuka (carport) yang tertutup lantai atas: tambahkan kolom di pojok
+  if (r.jenis === "terbuka" && diAtas.length) {
+    const K = 0.3, matKolom = new THREE.MeshStandardMaterial({ color: "#ccc" });
+    for (const [kx, ky] of [[r.x, r.y], [r.x + r.w - K, r.y], [r.x, r.y + r.h - K], [r.x + r.w - K, r.y + r.h - K]]) {
+      const k = box(K, TINGGI_LANTAI, K, matKolom);
+      k.position.set(kx + K / 2, base + TINGGI_LANTAI / 2, Z(ky + K / 2));
+      g.add(k);
+    }
+  }
   if (["ruang", "mezanin", "void"].includes(r.jenis) && diAtas.length === 0 && !state.tanpaAtap) {
     const atap = box(r.w + 0.3, 0.1, r.h + 0.3, new THREE.MeshStandardMaterial({ color: "#8a6f5a" }));
     atap.position.set(cx, base + TINGGI_LANTAI + 0.05, cz);

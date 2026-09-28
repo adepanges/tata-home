@@ -24,10 +24,10 @@ Edit konstanta di bagian `DATA DENAH` pada `index.html`:
 - `RUANG` — daftar ruangan: `x, y, w, h` (m, y=0 = sisi depan/jalan), `lantai`, `tahap`,
   `jenis`:
   - `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport/taman), `"balkon"` lantai + railing
-  - `"tangga"` anak tangga (opsi `arah: "belakang" | "depan"`)
+  - `"tangga"` tangga; `tanggaL(rect)` menghitung tangga L (anak tangga, bordes, optrede) di dalam area void
   - `"void"` lubang tembus dua lantai, `"mezanin"` lantai atas di tepi void (railing menghadap void)
   - opsi `mobil: n` untuk menggambar n mobil di carport
-- `VOID` — ukuran void di atas living room (4 → 4×4 m, 3 → 3×3 m)
+- `VOID` — ukuran void di atas living room (4 → 4×4 m, 3 → 3×3 m); tangga L ikut menyesuaikan
 
 ## Preview
 
