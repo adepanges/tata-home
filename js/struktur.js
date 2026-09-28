@@ -122,9 +122,10 @@ H(3, 6.5, 8, 12);
 for (const [a, b] of [[0, 4], [4, 6], [6, 8], [8, 12]]) H(3, 10, a, b);
 V(3, 0, 0, 4); V(3, 0, 4, 6.5); V(3, 0, 6.5, 10);
 V(3, 4, 0, 4, { jenis: "void", ket: "tepi lubang tangga sisi timur + dinding R. Tangga" });
-V(3, 4, 4, 10, { ket: "bentang 6 m (B3 berhenti di lt 1); 2 tandon di atas balok ini dekat kolom B4" });
+V(3, 4, 4, 10, { ket: "bentang 6 m (B3 berhenti di lt 1)" });
 V(3, 6, 0, 4); V(3, 6, 4, 10, { ket: "bentang 6 m (C3 berhenti di lt 1); tiang pendopo di atasnya" });
 V(3, 8, 0, 6.5); V(3, 8, 6.5, 10);
+H(3, 8.7, 6, 8, { dim: [20, 30], ket: "dudukan tandon (ukuran minimum praktis 20/30): bersama balok C4–D4 membingkai petak 2 × 1,3 m di atas KM Dalam" });
 for (const [a, b] of [[0, 4], [4, 6.5], [6.5, 10]]) V(3, 10, a, b, { ket: "tiang pendopo timur tepat di atas balok ini" });
 V(3, 12, 0, 6.5); V(3, 12, 6.5, 10);
 
@@ -426,6 +427,8 @@ function hitung(bata) {
       for (const [x, y] of tiang) titikRooftop.push({ nama: "tiang pendopo", x, y, P: atap / tiang.length + 50 });
     }
   }
+  // tepat di balok (≤ 15 cm) → ke balok itu; di atas pelat → dibagi ke dua balok pengapit
+  // pada arah bentang pendek (hukum tuas)
   const pikul3 = balokPikul(3);
   const titikInfo = titikRooftop.map((p) => {
     let best = null;
@@ -434,8 +437,21 @@ function hitung(bata) {
       if (t < b.a - EPS || t > b.b + EPS) continue;
       if (!best || jarak < best.jarak) best = { b, jarak, t };
     }
-    if (best) beban.get(best.b).titik.push([best.t, p.P]);
-    return { ...p, balok: best?.b, jarak: best?.jarak };
+    if (best && best.jarak <= 0.15) {
+      beban.get(best.b).titik.push([best.t, p.P]);
+      return { ...p, balok: [best.b], jarak: best.jarak };
+    }
+    const apit = ["h", "v"].map((o) => {
+      const t = o === "h" ? p.x : p.y, s = o === "h" ? p.y : p.x;
+      const sej = pikul3.filter((b) => b.o === o && t >= b.a - EPS && t <= b.b + EPS);
+      const k0 = sej.filter((b) => b.pos < s).sort((a, b) => b.pos - a.pos)[0];
+      const k1 = sej.filter((b) => b.pos > s).sort((a, b) => a.pos - b.pos)[0];
+      return k0 && k1 ? { k0, k1, t, s, L: k1.pos - k0.pos } : null;
+    }).filter(Boolean).sort((a, b) => a.L - b.L)[0];
+    if (!apit) return { ...p, balok: [], jarak: null };
+    beban.get(apit.k0).titik.push([apit.t, (p.P * (apit.k1.pos - apit.s)) / apit.L]);
+    beban.get(apit.k1).titik.push([apit.t, (p.P * (apit.s - apit.k0.pos)) / apit.L]);
+    return { ...p, balok: [apit.k0, apit.k1], jarak: best?.jarak };
   });
   // 4. tangga: tangga rooftop ±5 m² → bordes (in-wall + kantilever) & balok tepi void
   for (const b of bl.filter((b) => b.jenis === "tangga")) beban.get(b).q += 1.0 * ASUMSI.tangga / 2;

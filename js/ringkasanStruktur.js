@@ -45,7 +45,9 @@ export function renderStruktur() {
       jadi cukup di atas pelat walau di atas garasi. Kalau dipakai hebel 10 cm (±345 kg/m), perlu balok anak 4 m
       dan kedap suaranya malah lebih rendah. Walk-in terbuka ke kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
     <li>Dinding utara R. Tangga rooftop dipindah ke y = 0, di atas balok tepi, sehingga tidak perlu balok anak dan bordesnya lebih lega.</li>
-    <li>Pendopo 4,8 m sehingga tiangnya tepat di as balok. Tandon dipindah ke atas balok induk dekat kolom. Atap pendopo memakai material ringan.</li>
+    <li>Pendopo 4,8 m sehingga tiangnya tepat di as balok. Atap pendopo memakai material ringan.</li>
+    <li>Tandon dipindah ke atas KM Dalam (petak kolom C4–D4), tidak lagi di atas kamar tidur. Pipa turun lewat satu
+      shaft ke KM lantai 2, KM lantai 1 dan dapur. Pemanas air surya pindah ke area terbuka di luar bayangan R. Tangga.</li>
     <li>Kolom D1/D3 di tepi garasi: bentang timur–barat 2 + 4 m, bukan 6 m. Pintu/jendela digeser sedikit supaya tidak bertabrakan dengan kolom.</li>
   </ul></div></div><div class="grid2">`);
 
@@ -133,9 +135,15 @@ export function renderStruktur() {
     <li><b>Tepi void</b>: balok tepi void di as 2 dan as B. Dinding void 6 m di as A dan as 1 diberi balok ikat
       selebar dinding, supaya tidak ada balok menggantung di atas tangga. Bordes tangga rooftop ditumpu
       balok dalam dinding barat + balok kantilever 1 m dari kolom A2.</li>
-    <li><b>Beban terpusat rooftop</b>: ${titik.map((p) => `${p.nama} ${ton(p.P)} → ${p.balok ? `${p.balok.id}${p.jarak > 0.3 ? ` (${fmtM(p.jarak)} m dari balok — buat dudukan yang menumpu ke balok)` : ""}` : "pelat"}`).join("; ")}.</li>
-    <li>2 tandon 1000 L (±2,2 t penuh) sudah dipindah tepat di atas balok induk as B, dekat kolom B4, di atas dudukan beton/baja.
-      Tiang pendopo jatuh tepat di as balok x = 6 / 8 / 10. Atap pendopo memakai material ringan (uPVC/ASA, coklat) ±25 kg/m².</li>
+    <li><b>Beban terpusat rooftop</b>: ${titik.map((p) => `${p.nama} ${ton(p.P)} → ${p.balok.length === 1 ? p.balok[0].id : `dibagi ke ${p.balok.map((b) => b.id).join(" & ")}`}`).join("; ")}.</li>
+    <li><b>2 tandon 1000 L</b> (±2,2 t penuh) berdiri di petak 2 × 1,3 m yang dibingkai kolom C4–D4, balok y = 10, as C, as D
+      dan balok dudukan y = 8,7. Beban turun ke kolom C4 &amp; D4 dalam jarak ±1,3 m. Pelat petak ini ditebalkan atau diberi
+      dudukan beton ±15 cm. Di bawahnya KM Dalam, jadi tidak di atas kamar tidur, dan satu tumpukan dengan KM lantai 1.
+      Tiang pendopo jatuh tepat di as balok x = 6 / 8 / 10.</li>
+    <li><b>Distribusi air</b>: pipa turun lewat shaft di pojok KM Dalam (±3 m ke shower lantai 2). KM lantai 1 tepat di bawahnya,
+      dapur lantai 1 ±3 m lewat plafon, dapur kering lantai 2 ±8 m lewat plafon koridor. Tekanan gravitasi ke lantai 2
+      hanya ±0,2–0,3 bar, jadi <b>pompa booster</b> di sebelah tandon diperlukan. Pemanas air surya ±4 m dari shaft,
+      dan pipa air panasnya perlu diisolasi.</li>
     <li>Taman rooftop: pakai planter box dengan media tanam ringan dan lapisan drainase; waterproofing wajib.</li>
   </ul>`);
 

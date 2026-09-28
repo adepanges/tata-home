@@ -179,6 +179,8 @@ export const RUANG = [
   { nama: "Walk-in", x: 6.8, y: 5, w: 1.2, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
     label: [7.55, 6.0],
     perabot: [["lemari", 7.2, 6.25, 270, 2.0, 0.6]] },
+  // shaft pipa: air bersih dari tandon tepat di atasnya; di bawahnya KM lantai 1 (satu tumpukan basah)
+  { nama: "Shaft", x: 6.55, y: 9.5, w: 0.4, h: 0.4, lantai: 2, tahap: 2, jenis: "zona" },
   { nama: "KM Dalam", x: 5, y: 7.5, w: 3, h: 2.5, lantai: 2, tahap: 2, jenis: "ruang", finish: "basah",
     label: [6.5, 8.35],
     perabot: [["wastafel", 5.3, 8.0, 270], ["wastafel", 5.3, 8.6, 270], ["kloset", 6.3, 9.55, 180], ["shower", 7.45, 9.45, 0, 0.9, 0.9]] },
@@ -217,23 +219,27 @@ export const RUANG = [
     label: [8, 2.75],
     perabot: [["sofa", 8, 3.7, 0], ["sofa", 8, 6.3, 180], ["kursi", 9.6, 5, 90], ["kursi", 6.4, 5, 270],
               ["mejaTamu", 8, 5, 0, 1.2, 0.6]] },
-  { nama: "Taman", x: 4.6, y: 8.75, w: 6.8, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman",
-    label: [8, 9.2],
-    perabot: [["pot", 5.1, 9.3, 0], ["pot", 10.9, 9.3, 0]] },
+  { nama: "Taman", x: 8.3, y: 8.75, w: 3.1, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman",
+    label: [9.6, 9.3],
+    perabot: [["pot", 10.9, 9.3, 0]] },
   { nama: "Taman", x: 4.6, y: 0.15, w: 6.8, h: 1.1, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
     perabot: [["pot", 5.1, 0.7, 0], ["pot", 10.9, 0.7, 0]] },
   { nama: "Taman", x: 4.6, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
     perabot: [["pot", 4.95, 3.5, 0], ["pot", 4.95, 6.5, 0]] },
   { nama: "Taman", x: 10.7, y: 2, w: 0.7, h: 6, lantai: 3, tahap: 3, jenis: "taman", finish: "rumput", grup: "taman", label: false,
     perabot: [["pot", 11.05, 3.5, 0], ["pot", 11.05, 6.5, 0]] },
-  // pemanas air surya di tempat terbuka (butuh sinar matahari langsung)
-  { nama: "Air Panas", x: 0.3, y: 4.15, w: 3.5, h: 1.15, lantai: 3, tahap: 3, jenis: "zona",
-    perabot: [["pemanasAir", 2.05, 4.72, 0, 2.0, 1.0]] },
-  // semua instalasi terpusat di bawah atap polikarbonat sederhana
-  // tandon (±1,1 t penuh per buah) tepat di atas balok induk as B, dekat kolom B4
-  { nama: "Instalasi · atap polikarbonat", x: 0.15, y: 5.45, w: 4.4, h: 4.4, lantai: 3, tahap: 3, jenis: "zona", kanopi: true,
-    perabot: [["acOutdoor", 0.4, 5.95, 270], ["acOutdoor", 0.4, 6.95, 270], ["acOutdoor", 0.4, 7.95, 270], ["acOutdoor", 0.4, 8.95, 270],
-              ["jemuran", 2.35, 6.4, 0, 2.7, 0.6], ["tandon", 4.0, 9.2, 0], ["tandon", 4.0, 7.95, 0], ["pompa", 2.9, 9.35, 0]] },
+  // AC outdoor & jemuran di bawah atap polikarbonat sederhana (beban ringan, boleh di atas kamar)
+  { nama: "Instalasi · atap polikarbonat", x: 0.15, y: 4.15, w: 3.85, h: 3.9, lantai: 3, tahap: 3, jenis: "zona", kanopi: true,
+    perabot: [["acOutdoor", 0.4, 4.7, 270], ["acOutdoor", 0.4, 5.6, 270], ["acOutdoor", 0.4, 6.5, 270], ["acOutdoor", 0.4, 7.4, 270],
+              ["jemuran", 2.4, 6.0, 0, 2.7, 0.6]] },
+  // pemanas air surya: terbuka penuh, di luar bayangan R. Tangga & kanopi; panel menghadap utara (tangki di sisi selatan);
+  // ±4 m dari tandon & shaft pipa → pipa air panas pendek
+  { nama: "Air Panas", x: 0.15, y: 8.2, w: 3.85, h: 1.65, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["pemanasAir", 2.1, 9.0, 180]] },
+  // 2 tandon (±1,1 t penuh per buah) di atas KM Dalam, di petak kolom C4–D4 (dibingkai balok di 4 sisi);
+  // pipa turun lewat shaft di pojok KM Dalam → KM lantai 2, KM lantai 1 & dapur. Pompa booster di sebelahnya.
+  { nama: "Tandon & Pompa", x: 5.1, y: 8.65, w: 3.1, h: 1.2, lantai: 3, tahap: 3, jenis: "zona",
+    perabot: [["tandon", 6.45, 9.3, 0], ["tandon", 7.55, 9.3, 0], ["pompa", 5.5, 9.4, 0]] },
   // antena, radio, parabola & penangkal petir di atas atap ruang tangga (titik tertinggi, tidak terhalang)
   { nama: "Antena & Komunikasi (di atap R. Tangga)", x: 0.15, y: 2.05, w: 3.7, h: 1.8, lantai: 3, tahap: 3, jenis: "zona",
     diAtap: true,
