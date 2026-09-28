@@ -9,7 +9,7 @@
 //  - analisa dinding di atas pelat (dari modelDinding) → rekomendasi (a) / (b) / (c)
 //  - jalur beban sederhana: pelat → balok anak → balok induk → kolom, lalu dimensi dari aturan praktis
 //    (L/10–L/12, L/15) yang dicek momen kasar; dihitung dua kali: dinding atas hebel vs bata merah.
-import { RUANG, BUKAAN, TINGGI_LANTAI, TINGGI_PARAPET, TINGGI_BUKAAN, MATERIAL_DINDING, BERAT_BATA_MERAH, BERAT_KACA } from "./data.js";
+import { RUANG, BUKAAN, TINGGI_LANTAI, TINGGI_PARAPET, TINGGI_BUKAAN, MATERIAL_DINDING, BERAT_BATA_MERAH, BERAT_KACA, PARTISI, partisiDi } from "./data.js";
 import { modelDinding, tiangPendopo } from "./model.js";
 
 const EPS = 1e-6;
@@ -168,15 +168,21 @@ function runDinding(lantai) {
     r.panjang = r.b - r.a;
     r.tinggi = r.jenis === "parapet" ? TINGGI_PARAPET : TINGGI_LANTAI;
     // luas bidang dinding: bagian padat penuh + bagian di atas/bawah bukaan
-    r.luas = r.item.reduce((s, i) => {
+    const luasItem = (i) => {
       const L = i.b - i.a;
-      if (i.seg) return s + L * r.tinggi;
+      if (i.seg) return L * r.tinggi;
       const [bawah, atas] = TINGGI_BUKAAN[i.bukaan.tipe];
-      return s + L * (r.tinggi - (atas - bawah));
-    }, 0);
-    // dinding kaca geser: kusen aluminium + kaca (bukan pasangan hebel)
-    r.beratKaca = r.item.filter((i) => i.bukaan?.tipe === "kaca")
-      .reduce((s, i) => s + (i.b - i.a) * (TINGGI_BUKAAN.kaca[1] - TINGGI_BUKAAN.kaca[0]) * BERAT_KACA, 0);
+      return L * (r.tinggi - (atas - bawah));
+    };
+    // berat per bagian: partisi gipsum (ruang kerja) atau material lantai; bata = pembanding
+    const beratItem = (i, bata) => (partisiDi(lantai, r.o, r.pos, (i.a + i.b) / 2) ? PARTISI.material.berat : berat(lantai, bata));
+    r.luas = r.item.reduce((s, i) => s + luasItem(i), 0);
+    r.partisi = r.item.some((i) => partisiDi(lantai, r.o, r.pos, (i.a + i.b) / 2));
+    // kaca (kaca geser, jendela, kaca mati): kusen aluminium + kaca
+    r.beratKaca = r.item.filter((i) => i.bukaan && i.bukaan.tipe !== "pintu" && i.bukaan.tipe !== "bukaan")
+      .reduce((s, i) => { const [bw, at] = TINGGI_BUKAAN[i.bukaan.tipe]; return s + (i.b - i.a) * (at - bw) * BERAT_KACA; }, 0);
+    r.W = r.item.reduce((s, i) => s + luasItem(i) * beratItem(i, false), 0) + r.beratKaca;
+    r.WBata = r.item.reduce((s, i) => s + luasItem(i) * beratItem(i, true), 0) + r.beratKaca;
     r.segmen = r.item.filter((i) => i.seg).map((i) => i.seg);
     r.nama = namaDinding(r);
   }
@@ -275,8 +281,8 @@ function panel(level, o, pos, t, daftar) {
 
 function analisaDinding(r) {
   const lv = r.lantai;
-  r.bebanGaris = (r.luas * berat(lv) + r.beratKaca) / r.panjang;
-  r.bebanGarisBata = (r.luas * berat(lv, true) + r.beratKaca) / r.panjang;
+  r.bebanGaris = r.W / r.panjang;
+  r.bebanGarisBata = r.WBata / r.panjang;
   if (lv === 1) {
     const c = cakupan(r, BALOK.filter((b) => b.jenis === "sloof"));
     r.status = c.fraksi > 0.85 ? "sloof" : "b";
@@ -309,7 +315,7 @@ function analisaDinding(r) {
   let rek, alasan;
   if (r.basah) { rek = "b"; alasan = "dinding KM: beban screed, waterproofing, keramik & peralatan basah"; }
   // partisi ringan (kaca geser, ≤ ±60% dinding hebel penuh): cukup pelat + tulangan tambahan, juga di atas garasi
-  else if (r.bebanGaris <= 200) { rek = "a"; alasan = `partisi ringan (dinding kaca), ±${Math.round(r.bebanGaris)} kg/m`; }
+  else if (r.bebanGaris <= 200) { rek = "a"; alasan = `partisi ringan (${r.partisi ? "gipsum + rockwool kedap suara" : "dinding kaca"}), ±${Math.round(r.bebanGaris)} kg/m`; }
   else if (r.garasi) { rek = "b"; alasan = "di atas bentang besar garasi"; }
   else if (r.tepiVoid) { rek = "b"; alasan = "tepi void/lubang tangga"; }
   else if (r.panjang <= 3 && (rasio <= 0.25 || searahBentang)) {
@@ -391,7 +397,7 @@ function hitung(bata) {
   for (const lv of [2, 3]) {
     const pikul = balokPikul(lv);
     for (const r of RUN[lv]) {
-      let W = r.luas * berat(lv, bata) + r.beratKaca;
+      let W = bata ? r.WBata : r.W;
       if (lv === 3 && r.jenis === "dinding") W += (atapTangga * r.panjang) / panjangTangga;
       const c = cakupan(r, pikul);
       if (c.fraksi > 0.85) {
@@ -553,8 +559,10 @@ export function ringkasan() {
   const bebanDinding = [1, 2, 3].map((lt) => {
     const rs = DINDING.filter((r) => r.lantai === lt);
     const luas = rs.reduce((s, r) => s + r.luas, 0);
-    return { lantai: lt, material: MATERIAL_DINDING[lt].nama, panjang: rs.reduce((s, r) => s + r.panjang, 0), luas,
-      berat: luas * berat(lt), beratBata: luas * BERAT_BATA_MERAH };
+    const partisi = rs.some((r) => r.partisi) ? ` + ${PARTISI.material.nama.toLowerCase()} (${PARTISI.material.berat} kg/m²) di ruang kerja` : "";
+    return { lantai: lt, material: MATERIAL_DINDING[lt].nama + ` (${MATERIAL_DINDING[lt].berat} kg/m²)` + partisi,
+      panjang: rs.reduce((s, r) => s + r.panjang, 0), luas,
+      berat: rs.reduce((s, r) => s + r.W, 0), beratBata: rs.reduce((s, r) => s + r.WBata, 0) };
   });
   const perhatian = DINDING.filter((r) => r.perluPerhatian);
   const selisihBalok = BALOK.filter((b) => b.dimBata && b.dimBata.join() !== b.dim.join());

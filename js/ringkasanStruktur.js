@@ -40,8 +40,10 @@ export function renderStruktur() {
     <li>Dinding foyer digeser ke x = 4, segaris dinding KM. Garis ini jadi as kolom B, dengan satu balok &amp; sloof menerus.</li>
     <li>Open space lantai 1: dinding living–r. makan, r. makan–dapur, foyer–living, foyer–selasar dan dapur–selasar
       dihapus. Pemisah dapur–r. makan cukup meja island.</li>
-    <li>Lantai 2: dinding studio kerja di atas garasi (x = 7) dihapus, jadi tidak perlu balok anak 4 m. Walk-in terbuka ke kamar utama.
-      Dinding studio–balkon (x = 10,5) diganti kaca geser (±170 kg/m), cukup di atas pelat.</li>
+    <li>Lantai 2: ruang kerja ditutup <b>partisi gipsum 2 lapis + rockwool</b> (±45 kg/m², kedap suara STC ±50)
+      dengan kaca mati laminated ke dapur kering dan pintu solid-core ber-seal. Partisi ini ringan (&lt; 200 kg/m),
+      jadi cukup di atas pelat walau di atas garasi. Kalau dipakai hebel 10 cm (±345 kg/m), perlu balok anak 4 m
+      dan kedap suaranya malah lebih rendah. Walk-in terbuka ke kamar utama. Dinding studio–balkon memakai kaca geser, cukup di atas pelat.</li>
     <li>Dinding utara R. Tangga rooftop dipindah ke y = 0, di atas balok tepi, sehingga tidak perlu balok anak dan bordesnya lebih lega.</li>
     <li>Pendopo 4,8 m sehingga tiangnya tepat di as balok. Tandon dipindah ke atas balok induk dekat kolom. Atap pendopo memakai material ringan.</li>
     <li>Kolom D1/D3 di tepi garasi: bentang timur–barat 2 + 4 m, bukan 6 m. Pintu/jendela digeser sedikit supaya tidak bertabrakan dengan kolom.</li>
@@ -83,7 +85,7 @@ export function renderStruktur() {
   const hemat = tot.reduce((s, b) => s + b.beratBata - b.berat, 0);
   out.push(`<div class="grid2"><div><h3>Beban dinding per lantai</h3><table>
     <tr><th>Lantai</th><th>Material</th><th class="num">Panjang</th><th class="num">Berat</th><th class="num">Seandainya bata merah*</th></tr>
-    ${R.bebanDinding.map((b) => `<tr><td>${NAMA_LANTAI[b.lantai]}</td><td>${b.material} (${MATERIAL_DINDING[b.lantai].berat} kg/m²)</td>
+    ${R.bebanDinding.map((b) => `<tr><td>${NAMA_LANTAI[b.lantai]}</td><td>${b.material}</td>
       <td class="num">${fmtM(b.panjang)} m</td><td class="num">${ton(b.berat)}</td>
       <td class="num">${b.lantai === 1 ? "—" : `${ton(b.beratBata)} <small>(+${Math.round((b.beratBata / b.berat - 1) * 100)}%)</small>`}</td></tr>`).join("")}
   </table>
@@ -127,7 +129,7 @@ export function renderStruktur() {
     <li><b>Garasi 6 × 6,5 m tanpa kolom tengah</b>: balok bentang panjang ${garasi.map((b) => `${b.id} ${b.dim.join("/")}`).join(", ")}.
       Balok anak as y = 4 (${BALOK.filter((b) => b.level === 2 && b.o === "h" && b.pos === 4 && b.a >= 6).map((b) => b.dim.join("/")).join(" & ")})
       menopang dinding K. Utama di atasnya. Dinding lantai 2 di atas garasi duduk di balok, kecuali dinding kaca
-      geser studio–balkon yang cukup ringan untuk pelat.</li>
+      geser studio–balkon dan partisi gipsum ruang kerja yang cukup ringan untuk pelat.</li>
     <li><b>Tepi void</b>: balok tepi void di as 2 dan as B. Dinding void 6 m di as A dan as 1 diberi balok ikat
       selebar dinding, supaya tidak ada balok menggantung di atas tangga. Bordes tangga rooftop ditumpu
       balok dalam dinding barat + balok kantilever 1 m dari kolom A2.</li>

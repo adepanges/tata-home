@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN, TINGGI_PARAPET, MATERIAL_DINDING } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TINGGI_LANTAI, TEBAL_PELAT, TEBAL_DINDING, TINGGI_BUKAAN, TINGGI_PARAPET, MATERIAL_DINDING, PARTISI, partisiDi } from "./data.js";
 import { modelDinding, overlap, tiangPendopo } from "./model.js";
 import { KOLOM, BALOK, WARNA_BALOK, cariDinding, lantaiTampil } from "./struktur.js";
 
@@ -75,6 +75,7 @@ export function buat3D(host) {
   };
   // mode struktur: warna material dinding (bata merah / hebel), beton, dan versi transparan
   const matMaterial = {}, matPerhatian = new THREE.MeshStandardMaterial({ color: "#d62828" });
+  const matPartisi = new THREE.MeshStandardMaterial({ color: PARTISI.material.warna });
   for (const [lt, m] of Object.entries(MATERIAL_DINDING)) matMaterial[lt] = new THREE.MeshStandardMaterial({ color: m.warna });
   const matKolom = new THREE.MeshStandardMaterial({ color: "#9e9b94", roughness: 0.9 });
   const matBalok = {};
@@ -302,7 +303,8 @@ export function buat3D(host) {
       const matDinding = (tahap) => (state.struktur3d ? matMaterial[lantai] : state.warnaTahap ? matTahap[tahap] : mat.plester);
       for (const d of m.dinding) {
         const r = state.struktur3d && cariDinding(lantai, d.o, d.pos, d.a, d.b);
-        const w = potongDinding(d.o, d.pos, d.a, d.b, base, 0, tinggiDinding, r?.perluPerhatian ? matPerhatian : matDinding(d.tahap));
+        const partisi = state.struktur3d && partisiDi(lantai, d.o, d.pos, (d.a + d.b) / 2);
+        const w = potongDinding(d.o, d.pos, d.a, d.b, base, 0, tinggiDinding, r?.perluPerhatian ? matPerhatian : partisi ? matPartisi : matDinding(d.tahap));
         if (w) { w.userData.dinding = true; grupUntuk(grup, d.tahap, lantai).add(w); }
       }
       for (const b of m.bukaan) {
@@ -443,7 +445,7 @@ export function buat3D(host) {
 
     // mode struktur: semua selain kolom/balok dibuat tembus pandang
     ground.material.opacity = state.struktur3d ? 0.55 : 1;
-    const matDindingSemua = new Set([...Object.values(matMaterial), ...Object.values(matTahap), mat.plester, matPerhatian]);
+    const matDindingSemua = new Set([...Object.values(matMaterial), ...Object.values(matTahap), mat.plester, matPerhatian, matPartisi]);
     if (state.struktur3d)
       for (const g of grup.values())
         g.traverse((o) => {

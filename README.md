@@ -11,8 +11,9 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
 - Slider **Tahap**: rumah "tumbuh" dari tahap 1 ke tahap akhir; rencana tahap berikutnya tampil transparan.
 - Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
 - **Open space** lantai 1: living, r. makan, dapur, foyer & selasar menyatu (daftar `TANPA_DINDING`); satu-satunya sekat
-  adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2: studio kerja terbuka
-  ke dapur kering/koridor, walk-in terbuka ke kamar utama, dinding kaca geser ke balkon.
+  adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2:
+  walk-in terbuka ke kamar utama, dinding kaca geser ke balkon. Ruang kerja lantai 2 tertutup partisi ringan kedap suara
+  (gipsum 2 lapis + rockwool, `PARTISI`) dengan kaca mati laminated ke dapur kering.
 - **Tahap 3 – Rooftop**: tangga melayang ke atap, rumah tangga beratap, pendopo (deck kayu, tiang besi,
   atap limasan ringan uPVC warna coklat), tembok parapet 130 cm, zona instalasi air, air panas, AC outdoor, antena & komunikasi.
 - **Struktur kolom & balok** (perkiraan awal): toggle *Struktur* di denah 2D (grid as A–E / 1–4, kolom, balok putus-putus

@@ -1,6 +1,6 @@
 // Denah 2D gaya gambar kerja: dinding tebal tersambung, pintu dengan busur bukaan,
 // jendela, pola lantai, furnitur, garis ukuran berantai, skala batang.
-import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING } from "./data.js";
+import { LAHAN, JALAN, RUANG, BUKAAN, TAHAP, TEBAL_DINDING, partisiDi } from "./data.js";
 import { modelDinding, tiangPendopo } from "./model.js";
 import { gambarPerabot } from "./simbol.js";
 import { KOLOM, BALOK, GRID_X, GRID_Y, BEBAN_TITIK, WARNA_BALOK, WARNA_STATUS, cariDinding, lantaiTampil, fmtM } from "./struktur.js";
@@ -230,10 +230,18 @@ export function gambarDenah(svg, state) {
     const r = cariDinding(lt, d.o, d.pos, d.a, d.b);
     return !r || ["balok", "sloof"].includes(r.status) ? "#a9a9a9" : WARNA_STATUS[r.status];
   };
-  for (const d of m.dinding)
+  for (const d of m.dinding) {
+    // partisi gipsum (ruang kerja): isi terang + garis tengah, beda dari pasangan hebel/bata
+    const partisi = partisiDi(lt, d.o, d.pos, (d.a + d.b) / 2);
+    const isi = partisi && !S ? `fill="#f1e6cc" stroke="${DINDING}" stroke-width="0.02"` : `fill="${warnaDinding(d, DINDING)}"`;
     out.push(d.o === "h"
-      ? `<rect x="${d.a}" y="${d.pos - t2}" width="${d.b - d.a}" height="${TEBAL_DINDING}" fill="${warnaDinding(d, DINDING)}"/>`
-      : `<rect x="${d.pos - t2}" y="${d.a}" width="${TEBAL_DINDING}" height="${d.b - d.a}" fill="${warnaDinding(d, DINDING)}"/>`);
+      ? `<rect x="${d.a}" y="${d.pos - t2}" width="${d.b - d.a}" height="${TEBAL_DINDING}" ${isi}/>`
+      : `<rect x="${d.pos - t2}" y="${d.a}" width="${TEBAL_DINDING}" height="${d.b - d.a}" ${isi}/>`);
+    if (partisi && !S)
+      out.push(d.o === "h"
+        ? `<line x1="${d.a}" x2="${d.b}" y1="${d.pos}" y2="${d.pos}" stroke="${DINDING}" stroke-width="0.012" stroke-dasharray="0.06 0.04"/>`
+        : `<line y1="${d.a}" y2="${d.b}" x1="${d.pos}" x2="${d.pos}" stroke="${DINDING}" stroke-width="0.012" stroke-dasharray="0.06 0.04"/>`);
+  }
   for (const r of m.railing)
     out.push(r.o === "h"
       ? `<rect x="${r.a}" y="${r.pos - 0.03}" width="${r.b - r.a}" height="0.06" fill="#fff" stroke="${DINDING}" stroke-width="0.015"/>`

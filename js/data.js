@@ -35,8 +35,21 @@ export const MATERIAL_DINDING = {
   2: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
   3: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
 };
-export const BERAT_BATA_MERAH = 250;
-export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca tempered (dinding kaca geser)   // pembanding: seandainya lantai atas memakai bata merah
+export const BERAT_BATA_MERAH = 250;   // pembanding: seandainya lantai atas memakai bata merah
+export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca (kaca geser, jendela, kaca mati laminated)
+
+// Partisi ringan kedap suara untuk ruang kerja lantai 2: rangka baja ringan 75 mm, gipsum 2 × 12 mm tiap sisi,
+// isi rockwool 50 mm (±60 kg/m³) → ±45 kg/m², STC ±50 (setara/lebih kedap dari hebel 10 cm, STC ±40–45).
+// Cukup di atas pelat (tanpa balok anak) walau di atas garasi.
+export const PARTISI = {
+  material: { nama: "Partisi gipsum 2 lapis + rockwool", berat: 45, warna: "#e3cf9f" },
+  garis: [
+    { lantai: 2, garis: "v", pos: 7, a: 0, b: 4 },   // ruang kerja | dapur kering (+ kaca mati laminated)
+    { lantai: 2, garis: "h", pos: 4, a: 7, b: 8 },   // ruang kerja | koridor (pintu solid-core + seal)
+  ],
+};
+export const partisiDi = (lantai, o, pos, t) => PARTISI.garis.some((g) =>
+  g.lantai === lantai && g.garis === o && Math.abs(g.pos - pos) < 1e-3 && t > g.a - 0.1 && t < g.b + 0.1);
 
 export const TAHAP = {
   1: { nama: "Tahap 1 – Lantai 1",          warna: "#e8a33d" },
@@ -152,10 +165,10 @@ export const RUANG = [
   { nama: "Mezanin", x: 0, y: VOID, w: VOID, h: 4 - VOID, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket" },
   // satu koridor; bagian kirinya sekaligus tempat memandang ke void
   { nama: "Koridor", x: 0, y: 4, w: 8, h: 1, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [5.6, 4.45] },
-  // studio kerja terbuka ke dapur kering & koridor; rak buku jadi partisi ringan
+  // ruang kerja tertutup partisi ringan kedap suara (lihat PARTISI) + kaca mati ke dapur kering
   { nama: "Studio Kerja", x: 7, y: 0, w: 3.5, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
-    label: [8.7, 2.6],
-    perabot: [["mejaKerja", 8.5, 0.45, 0, 2.0, 0.6], ["kursi", 8.5, 1.05, 180], ["rak", 7.3, 2.4, 0, 0.35, 1.8]] },
+    label: [8.7, 2.3],
+    perabot: [["mejaKerja", 8.5, 0.45, 0, 2.0, 0.6], ["kursi", 8.5, 1.05, 180], ["rak", 9.3, 3.75, 0, 1.8, 0.35]] },
   { nama: "Balkon", x: 10.5, y: 0, w: 1.5, h: 4, lantai: 2, tahap: 2, jenis: "balkon", finish: "keramik",
     label: [11.25, 3.2],
     perabot: [["kursi", 11.25, 0.8, 90], ["kursi", 11.25, 1.6, 90]] },
@@ -246,6 +259,8 @@ export const BUKAAN = [
   { lantai: 1, tipe: "jendela", garis: "v", pos: 10,  a: 7.6, b: 9.4 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 8.4, b: 9.8 },
   // lantai 2
+  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,    a: 7.1, b: 7.9, engsel: "a", buka: -1 },  // ruang kerja (solid-core + seal)
+  { lantai: 2, tipe: "jendela", garis: "v", pos: 7,    a: 1.0, b: 3.4 },   // kaca mati laminated ruang kerja–dapur kering
   { lantai: 2, tipe: "kaca",    garis: "v", pos: 10.5, a: 0.1, b: 3.9 },   // dinding kaca geser penuh ke balkon (ringan: tanpa balok anak)
   { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 4.1, b: 4.9, engsel: "a", buka: +1 },  // K. utama
   { lantai: 2, tipe: "bukaan",  garis: "h", pos: 7.5,  a: 7.0, b: 7.9 },                          // walk-in–KM dalam
@@ -272,8 +287,6 @@ export const TANPA_DINDING = [
   { lantai: 1, a: "R. Makan",    b: "Dapur" },
   { lantai: 1, a: "Dapur",       b: "Selasar" },
   { lantai: 1, a: "Foyer",       b: "Selasar" },
-  { lantai: 2, a: "Dapur Kering", b: "Studio Kerja" },
-  { lantai: 2, a: "Koridor",      b: "Studio Kerja" },
   { lantai: 2, a: "Walk-in",      b: "K. Tidur Utama" },
 ];
 
