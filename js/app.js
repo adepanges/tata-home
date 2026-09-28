@@ -20,7 +20,7 @@ function renderRingkasan() {
     kum = fmt(kum + luas);
     return `<tr class="${+k > state.tahap ? "future" : ""}">
       <td><span style="color:${t.warna}">■</span> ${t.nama}</td>
-      <td>${rs.map((r) => r.nama).join(", ")}</td>
+      <td>${[...new Set(rs.map((r) => r.nama))].join(", ")}</td>
       <td class="num">${luas} m²</td><td class="num">${luasLain} m²</td><td class="num">${kum} m²</td></tr>`;
   });
   $("ringkasan").innerHTML = `<tr><th>Tahap</th><th>Ruangan</th><th class="num">Luas bangunan</th>

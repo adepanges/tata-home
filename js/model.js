@@ -26,7 +26,8 @@ function diUjungTangga(ruang, dibangun, o, pos, m) {
 // Void & mezanin saling terbuka; mezanin diberi railing di sisi yang menghadap void.
 export function segmenSisi(ruang, dibangun, r) {
   const terbukaKe = ["void", "mezanin"];
-  const tetangga = ruang.filter((o) => o !== r && o.lantai === r.lantai && dibangun(o) && terbukaKe.includes(o.jenis));
+  const tetangga = ruang.filter((o) => o !== r && o.lantai === r.lantai && dibangun(o) &&
+    (terbukaKe.includes(o.jenis) || (r.grup && o.grup === r.grup)));
   const sisi = [
     { o: "h", pos: r.y,       a: r.x, b: r.x + r.w },
     { o: "h", pos: r.y + r.h, a: r.x, b: r.x + r.w },
@@ -39,11 +40,13 @@ export function segmenSisi(ruang, dibangun, r) {
     for (let t = s.a; t < s.b - EPS; t += STEP) {
       const m = t + STEP / 2;
       let kind = r.jenis === "balkon" ? "rail" : "wall";
-      if (terbukaKe.includes(r.jenis)) {
+      if (terbukaKe.includes(r.jenis) || r.grup) {
         const n = tetangga.find((o) => s.o === "h"
           ? m > o.x && m < o.x + o.w && (sama(o.y, s.pos) || sama(o.y + o.h, s.pos))
           : m > o.y && m < o.y + o.h && (sama(o.x, s.pos) || sama(o.x + o.w, s.pos)));
-        if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(ruang, dibangun, s.o, s.pos, m)
+        if (n && r.grup && n.grup === r.grup) kind = "none";
+        else if (n && !terbukaKe.includes(r.jenis)) kind = "wall";
+        else if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(ruang, dibangun, s.o, s.pos, m)
           ? "rail" : "none";
       }
       const b = Math.min(t + STEP, s.b);

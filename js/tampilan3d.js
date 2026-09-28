@@ -181,7 +181,7 @@ export function buat3D(host) {
           new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.7 })));
         rumah.add(v);
         const ditutup = RUANG.some((o) => o.lantai === r.lantai + 1 && !dibangun(o) && overlap(o, r));
-        if (!ditutup && r.jenis !== "tangga") rumah.add(label(r.nama, cx, base + tinggi + 0.4, cz, true));
+        if (!ditutup && r.jenis !== "tangga" && r.label !== false) rumah.add(label(r.nama, cx, base + tinggi + 0.4, cz, true));
         continue;
       }
 
@@ -215,7 +215,7 @@ export function buat3D(host) {
       }
       for (const [tipe, x, y, rot = 0] of r.perabot || [])
         if (tipe === "mobil") g.add(buatMobil(x, y, rot));
-      if (!diAtas.length) {
+      if (!diAtas.length && r.label !== false) {
         const t = r.jenis === "terbuka" ? 0.3 : TINGGI_LANTAI;
         g.add(label(r.nama, cx, base + t + 0.4, cz));
       }

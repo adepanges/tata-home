@@ -155,12 +155,13 @@ export function gambarDenah(svg, state) {
 
   // 8. label ruang
   for (const r of [...aktif, ...rencana]) {
-    if (r.jenis === "tangga") continue;
+    if (r.jenis === "tangga" || r.label === false) continue;
     const built = dibangun(r);
     const [lx, ly] = r.label || [r.x + r.w / 2, r.y + r.h / 2];
     const nama = r.jenis === "void" ? "VOID" : r.nama.toUpperCase();
     out.push(`<text x="${lx}" y="${ly}" font-size="0.24" font-weight="600" letter-spacing="0.01" text-anchor="middle" fill="${built ? "#222" : "#999"}" ${halo}>${nama}</text>`);
-    const luas = r.jenis === "void" ? `${fmtM(r.w)} × ${fmtM(r.h)}` : `${fmtM(r.w * r.h)} m²`;
+    const potongan = r.grup ? RUANG.filter((o) => o.grup === r.grup) : [r];
+    const luas = r.jenis === "void" ? `${fmtM(r.w)} × ${fmtM(r.h)}` : `${fmtM(potongan.reduce((s, o) => s + o.w * o.h, 0))} m²`;
     out.push(`<text x="${lx}" y="${ly + 0.27}" font-size="0.19" text-anchor="middle" fill="${built ? "#666" : "#aaa"}" ${halo}>${luas}${built ? "" : " · tahap " + r.tahap}</text>`);
     if (built) out.push(`<circle cx="${lx}" cy="${ly + 0.44}" r="0.06" fill="${TAHAP[r.tahap].warna}"/>`);
   }
