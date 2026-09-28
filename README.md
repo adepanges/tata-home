@@ -10,8 +10,17 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
   dengan denah 2D, jadi bukaan di denah otomatis jadi lubang berkaca di 3D.
 - Slider **Tahap**: rumah "tumbuh" dari tahap 1 ke tahap akhir; rencana tahap berikutnya tampil transparan.
 - Void 4×4 m di living room dengan tangga L di dalamnya, ringkasan luas per tahap.
+- **Open space** lantai 1: living, r. makan, dapur, foyer & selasar menyatu (daftar `TANPA_DINDING`); satu-satunya sekat
+  adalah dinding foyer (rak sepatu) segaris dinding KM, dapur–r. makan dipisah meja island. Lantai 2: studio kerja terbuka
+  ke dapur kering/koridor, walk-in terbuka ke kamar utama, dinding kaca geser ke balkon.
 - **Tahap 3 – Rooftop**: tangga melayang ke atap, rumah tangga beratap, pendopo (deck kayu, tiang besi,
-  atap limasan genteng), tembok parapet 130 cm, zona instalasi air, air panas, AC outdoor, antena & komunikasi.
+  atap limasan ringan uPVC warna coklat), tembok parapet 130 cm, zona instalasi air, air panas, AC outdoor, antena & komunikasi.
+- **Struktur kolom & balok** (perkiraan awal): toggle *Struktur* di denah 2D (grid as A–E / 1–4, kolom, balok putus-putus
+  per jenis + ukuran b/h, dinding di atas pelat kuning/merah, beban terpusat rooftop) dan di 3D (kolom & balok beton,
+  dinding transparan: bata merah lantai 1, hebel lantai 2 & rooftop). Tabel ringkasan: kolom per lantai, panjang balok
+  per jenis, beban dinding hebel vs pembanding bata merah, dan dinding yang perlu perhatian.
+  **Perhitungan final wajib oleh insinyur struktur** (SNI 2847, SNI 1727, SNI 1726); pondasi & kolom tahap 1 dihitung
+  untuk beban akhir 3 lantai.
 
 ## Menjalankan
 
@@ -33,6 +42,8 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
 | `js/simbol.js` | Simbol furnitur tampak atas (kasur, sofa, dapur, kloset, mobil, …) |
 | `js/tampilan3d.js` | Render model 3D |
 | `js/app.js` | Kontrol UI & ringkasan luas |
+| `js/struktur.js` | Grid, kolom, balok (induk/anak/void/sloof/ring…), analisa dinding di atas pelat, jalur beban & dimensi awal |
+| `js/ringkasanStruktur.js` | Tabel ringkasan & legenda struktur |
 
 ## Mengubah denah (`js/data.js`)
 
@@ -45,4 +56,6 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
   - `grup`: beberapa persegi dengan grup sama = satu ruangan (bentuk L), tanpa dinding di antaranya
 - `BUKAAN`: pintu/jendela di dinding `garis` `"h"` (y=pos) / `"v"` (x=pos), rentang `a..b`,
   `tipe` `pintu` | `bukaan` | `jendela` | `boven` | `jendelaTinggi`; pintu punya `engsel` (`"a"`/`"b"`) dan `buka` (+1/−1)
+- `MATERIAL_DINDING`: material & berat dinding per lantai (bata merah lt 1, hebel lt 2 & rooftop)
+- `TANPA_DINDING`: pasangan ruangan bersebelahan tanpa dinding (open space)
 - `VOID`: ukuran void (4 → 4×4 m, 3 → 3×3 m); tangga L ikut menyesuaikan

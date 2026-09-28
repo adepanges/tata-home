@@ -1,10 +1,12 @@
 import { RUANG, TAHAP, BANGUNAN, TIDAK_DIHITUNG } from "./data.js";
 import { gambarDenah } from "./denah2d.js";
 import { buat3D } from "./tampilan3d.js";
+import { renderStruktur, legendStruktur } from "./ringkasanStruktur.js";
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => +n.toFixed(2);
-const state = { tahap: 1, lantai: 1, ghost: true, tanpaAtap: false, warnaTahap: true, potong: null, fokus: null };
+const state = { tahap: 1, lantai: 1, ghost: true, tanpaAtap: false, warnaTahap: true, potong: null, fokus: null,
+  struktur2d: false, struktur3d: false };
 $("tahap").max = Math.max(...RUANG.map((r) => r.tahap));
 
 $("legend").innerHTML = Object.values(TAHAP)
@@ -83,6 +85,18 @@ $("tanpaAtap").onchange = (e) => {
   tiga.renderUlang(state);
 };
 $("warnaTahap").onchange = (e) => { state.warnaTahap = e.target.checked; tiga.renderUlang(state); };
+$("struktur2d").onchange = (e) => {
+  state.struktur2d = e.target.checked;
+  $("legendStruktur").hidden = !state.struktur2d;
+  gambarDenah(svg, state);
+};
+$("struktur3d").onchange = (e) => {
+  state.struktur3d = e.target.checked;
+  if (state.struktur3d && !state.tanpaAtap) tiga.kameraAtas(true);
+  tiga.renderUlang(state);
+};
+$("legendStruktur").innerHTML = legendStruktur();
+$("strukturIsi").innerHTML = renderStruktur();
 function pilihLantai(lt) {
   state.lantai = lt;
   for (const x of $("lantaiSeg").children) x.classList.toggle("on", +x.dataset.lantai === lt);

@@ -44,6 +44,17 @@
   .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 3px 10px; font: inherit; cursor: pointer; }
   .chip:hover { border-color: #999; }
   .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .tog { display: flex; gap: 5px; align-items: center; font-size: 13px; font-weight: 400; cursor: pointer; }
+  .legend.struktur span::before { border-radius: 2px; height: 4px; width: 16px; vertical-align: 3px; }
+  .legend.struktur span.kotak::before { height: 10px; width: 10px; vertical-align: -1px; }
+  .peringatan { background: #fff6e0; border: 1px solid #f0d58a; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-bottom: 10px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px 20px; }
+  .grid2 h3, #struktur h3 { font-size: 14px; margin: 14px 0 6px; }
+  .sw { display: inline-block; width: 16px; height: 4px; border-radius: 2px; vertical-align: 3px; margin-right: 5px; }
+  .kode { display: inline-block; min-width: 26px; text-align: center; color: #fff; border-radius: 10px; font-size: 11px; font-weight: 700; padding: 1px 4px; }
+  #struktur ul { margin: 4px 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+  details summary { cursor: pointer; font-size: 13px; font-weight: 600; margin-top: 12px; }
+  .scroll { overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -61,11 +72,13 @@
     <h2>Denah 2D
       <span class="tools">
         <span class="seg" id="lantaiSeg"><button data-lantai="1" class="on">Lantai 1</button><button data-lantai="2">Lantai 2</button><button data-lantai="3">Rooftop</button></span>
+        <label class="tog"><input id="struktur2d" type="checkbox"> Struktur</label>
         <button class="btn" id="unduhSvg" title="Unduh denah sebagai SVG">⤓ SVG</button>
       </span>
     </h2>
     <svg id="svg2d"></svg>
     <div class="legend" id="legend"></div>
+    <div class="legend struktur" id="legendStruktur" hidden></div>
   </section>
 
   <section class="card">
@@ -75,6 +88,7 @@
       <span>Drag: putar · scroll: zoom · klik kanan + drag: geser</span>
       <label><input id="tanpaAtap" type="checkbox"> Sembunyikan atap</label>
       <label><input id="warnaTahap" type="checkbox" checked> Warna dinding per tahap</label>
+      <label><input id="struktur3d" type="checkbox"> Struktur (dinding transparan: bata merah / hebel)</label>
     </div>
     <div class="shortcut" id="shortcut"></div>
   </section>
@@ -82,6 +96,11 @@
   <section class="card full">
     <h2>Ringkasan per Tahap</h2>
     <table id="ringkasan"></table>
+  </section>
+
+  <section class="card full" id="struktur">
+    <h2>Struktur Kolom &amp; Balok — perkiraan awal</h2>
+    <div id="strukturIsi"></div>
   </section>
 </main>
 

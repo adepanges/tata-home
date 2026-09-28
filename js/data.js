@@ -9,7 +9,7 @@
 //   "mezanin" = lantai atas di tepi void: railing di sisi yang menghadap void
 //   "void"    = lubang tembus 2 lantai: tanpa pelat lantai, dinding luar + atap
 //   "rooftop" = lantai atap terbuka, dikelilingi tembok parapet (TINGGI_PARAPET)
-//   "pendopo" = paviliun terbuka: deck kayu, tiang, atap limasan
+//   "pendopo" = paviliun terbuka: deck kayu, tiang, atap limasan ringan (uPVC/ASA) warna coklat
 //   "zona"    = penanda area (instalasi, jemuran) — hanya garis & label, isinya lewat perabot;
 //               kanopi: true = diberi atap polikarbonat; diAtap: true = isinya di atas atap ruang tangga
 //   "taman"   = taman kecil (rumput) di atas lantai lain
@@ -27,6 +27,16 @@ export const TINGGI_LANTAI = 3;
 export const TEBAL_PELAT = 0.12;
 export const TEBAL_DINDING = 0.15;
 export const TINGGI_PARAPET = 1.3;
+
+// Material dinding per lantai (berat terplester, kg/m² bidang dinding).
+// Lantai 2 & rooftop SEMUA hebel 10 cm (termasuk KM + waterproofing, parapet, ruang tangga rooftop).
+export const MATERIAL_DINDING = {
+  1: { nama: "Bata merah", berat: 250, warna: "#b4533a" },
+  2: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
+  3: { nama: "Hebel 10 cm", berat: 115, warna: "#cfd8e0" },
+};
+export const BERAT_BATA_MERAH = 250;
+export const BERAT_KACA = 40;          // kg/m² kusen aluminium + kaca tempered (dinding kaca geser)   // pembanding: seandainya lantai atas memakai bata merah
 
 export const TAHAP = {
   1: { nama: "Tahap 1 – Lantai 1",          warna: "#e8a33d" },
@@ -103,15 +113,17 @@ export const RUANG = [
     label: [9.2, 6.05],
     perabot: [["mobil", 9.3, 1.9, 90], ["mobil", 9.3, 4.6, 90]] },
   // foyer: begitu pintu utama dibuka, yang terlihat dinding + rak sepatu, bukan isi rumah
-  { nama: "Foyer", x: 4.5, y: 4, w: 1.5, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    label: [5.35, 6.05],
-    perabot: [["rak", 4.75, 5.0, 0, 0.35, 1.4]] },
-  { nama: "R. Makan", x: 0, y: 4, w: 4.5, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    label: [3.85, 4.5],
-    perabot: [["mejaMakan", 2.2, 5.25, 0]] },
-  // mesin cuci di dapur, di ujung counter dekat dinding basah KM
+  // dinding foyer segaris dinding KM (x = 4, sekaligus as kolom B): satu-satunya sekat di ruang terbuka lantai 1
+  { nama: "Foyer", x: 4, y: 4, w: 2, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
+    label: [5.2, 5.2],
+    perabot: [["rak", 4.25, 5.25, 0, 0.35, 1.6]] },
+  { nama: "R. Makan", x: 0, y: 4, w: 4, h: 2.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
+    label: [3.4, 4.45],
+    perabot: [["mejaMakan", 2.0, 5.25, 0]] },
+  // dapur terbuka ke r. makan; meja island jadi separator (tanpa dinding)
   { nama: "Dapur", x: 0, y: 6.5, w: 4, h: 3.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
-    perabot: [["counter", 1.6, 9.6, 0, 3.0, 0.6], ["kompor", 0.9, 9.6, 180], ["sink", 2.4, 9.6, 180],
+    label: [2.2, 8.3],
+    perabot: [["counter", 2.25, 7.05, 0, 2.0, 0.6], ["counter", 1.6, 9.6, 0, 3.0, 0.6], ["kompor", 0.9, 9.6, 180], ["sink", 2.4, 9.6, 180],
               ["mesinCuci", 3.55, 9.6, 180], ["kulkas", 0.45, 7.0, 270]] },
   // selasar penghubung foyer, dapur, KM dan studio
   { nama: "Selasar", x: 4, y: 6.5, w: 2, h: 1.5, lantai: 1, tahap: 1, jenis: "ruang", finish: "keramik",
@@ -140,6 +152,7 @@ export const RUANG = [
   { nama: "Mezanin", x: 0, y: VOID, w: VOID, h: 4 - VOID, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket" },
   // satu koridor; bagian kirinya sekaligus tempat memandang ke void
   { nama: "Koridor", x: 0, y: 4, w: 8, h: 1, lantai: 2, tahap: 2, jenis: "mezanin", finish: "parket", label: [5.6, 4.45] },
+  // studio kerja terbuka ke dapur kering & koridor; rak buku jadi partisi ringan
   { nama: "Studio Kerja", x: 7, y: 0, w: 3.5, h: 4, lantai: 2, tahap: 2, jenis: "ruang", finish: "parket",
     label: [8.7, 2.6],
     perabot: [["mejaKerja", 8.5, 0.45, 0, 2.0, 0.6], ["kursi", 8.5, 1.05, 180], ["rak", 7.3, 2.4, 0, 0.35, 1.8]] },
@@ -176,17 +189,18 @@ export const RUANG = [
   // pintu di bordes langsung membuka ke rooftop
   { nama: "Lubang Tangga", ...TANGGA_ATAS, lantai: 3, tahap: 3, jenis: "void", grup: "r-tangga", label: false,
     lubangTangga: true },
-  { nama: "R. Tangga", x: 0, y: 0.7, w: 1.2, h: 1.2, lantai: 3, tahap: 3, jenis: "ruang", grup: "r-tangga", finish: "keramik",
+  // dinding utara R. Tangga di garis y = 0 (di atas balok tepi), bukan di tengah pelat
+  { nama: "R. Tangga", x: 0, y: 0, w: 1.2, h: 1.9, lantai: 3, tahap: 3, jenis: "ruang", grup: "r-tangga", finish: "keramik",
     label: false },
   // lantai rooftop, dikelilingi tembok parapet 130 cm
-  { nama: "Rooftop", x: 0, y: 0, w: 12, h: 0.7, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
-  { nama: "Rooftop", x: 1.2, y: 0.7, w: 10.8, h: 1.2, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton",
+  { nama: "Rooftop", x: 1.2, y: 0, w: 10.8, h: 1.9, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton",
     label: [3.2, 1.2] },
   { nama: "Rooftop", x: 4, y: 1.9, w: 8, h: 2.1, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false },
   { nama: "Rooftop", x: 0, y: 4, w: 12, h: 6, lantai: 3, tahap: 3, jenis: "rooftop", grup: "rooftop", finish: "beton", label: false,
   },
-  // pendopo di tengah area terbuka (x 4–12), simetris; taman mengelilingi di 4 sisi
-  { nama: "Pendopo", x: 5.5, y: 2, w: 5, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
+  // pendopo di tengah area terbuka (x 4–12), simetris; taman mengelilingi di 4 sisi.
+  // lebar 4,8 m supaya tiang jatuh tepat di as balok x = 6 / 8 / 10
+  { nama: "Pendopo", x: 5.6, y: 2, w: 4.8, h: 6, lantai: 3, tahap: 3, jenis: "pendopo", finish: "deck",
     label: [8, 2.75],
     perabot: [["sofa", 8, 3.7, 0], ["sofa", 8, 6.3, 180], ["kursi", 9.6, 5, 90], ["kursi", 6.4, 5, 270],
               ["mejaTamu", 8, 5, 0, 1.2, 0.6]] },
@@ -203,9 +217,10 @@ export const RUANG = [
   { nama: "Air Panas", x: 0.3, y: 4.15, w: 3.5, h: 1.15, lantai: 3, tahap: 3, jenis: "zona",
     perabot: [["pemanasAir", 2.05, 4.72, 0, 2.0, 1.0]] },
   // semua instalasi terpusat di bawah atap polikarbonat sederhana
-  { nama: "Instalasi · atap polikarbonat", x: 0.15, y: 5.45, w: 3.85, h: 4.4, lantai: 3, tahap: 3, jenis: "zona", kanopi: true,
+  // tandon (±1,1 t penuh per buah) tepat di atas balok induk as B, dekat kolom B4
+  { nama: "Instalasi · atap polikarbonat", x: 0.15, y: 5.45, w: 4.4, h: 4.4, lantai: 3, tahap: 3, jenis: "zona", kanopi: true,
     perabot: [["acOutdoor", 0.4, 5.95, 270], ["acOutdoor", 0.4, 6.95, 270], ["acOutdoor", 0.4, 7.95, 270], ["acOutdoor", 0.4, 8.95, 270],
-              ["jemuran", 2.35, 6.4, 0, 2.7, 0.6], ["tandon", 1.6, 9.2, 0], ["tandon", 2.9, 9.2, 0], ["pompa", 3.6, 8.2, 0]] },
+              ["jemuran", 2.35, 6.4, 0, 2.7, 0.6], ["tandon", 4.0, 9.2, 0], ["tandon", 4.0, 7.95, 0], ["pompa", 2.9, 9.35, 0]] },
   // antena, radio, parabola & penangkal petir di atas atap ruang tangga (titik tertinggi, tidak terhalang)
   { nama: "Antena & Komunikasi (di atap R. Tangga)", x: 0.15, y: 2.05, w: 3.7, h: 1.8, lantai: 3, tahap: 3, jenis: "zona",
     diAtap: true,
@@ -215,51 +230,56 @@ export const RUANG = [
 // ================== PINTU & JENDELA ==================
 // garis: "h" = dinding horizontal di y=pos, "v" = dinding vertikal di x=pos
 // a..b : rentang bukaan sepanjang dinding
-// tipe : "pintu" | "bukaan" (tanpa daun) | "jendela" | "boven" (jendela atas KM) | "jendelaTinggi"
+// tipe : "pintu" | "bukaan" (tanpa daun) | "jendela" | "boven" (jendela atas KM) | "jendelaTinggi" | "kaca" (kaca geser setinggi pintu)
 // pintu: engsel "a"/"b" (ujung mana), buka +1/-1 (daun membuka ke arah +y/+x atau -y/-x)
 export const BUKAAN = [
   // lantai 1
   { lantai: 1, tipe: "pintu",   garis: "v", pos: 6,   a: 4.5, b: 5.5, engsel: "a", buka: -1 },  // pintu utama → foyer
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 4,   a: 4.65, b: 5.9 },                         // foyer–living
-  { lantai: 1, tipe: "bukaan",  garis: "v", pos: 4.5, a: 5.7, b: 6.4 },                          // foyer–r. makan
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 6.5, a: 4.65, b: 5.9 },                         // foyer–selasar
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 4,   a: 0.4, b: 4.3 },                          // r. makan–living
-  { lantai: 1, tipe: "bukaan",  garis: "h", pos: 6.5, a: 2.3, b: 3.8 },                          // r. makan–dapur
-  { lantai: 1, tipe: "bukaan",  garis: "v", pos: 4,   a: 6.7, b: 7.8 },                          // dapur–selasar
   { lantai: 1, tipe: "pintu",   garis: "h", pos: 8,   a: 4.2, b: 4.9, engsel: "a", buka: +1 },  // KM
   { lantai: 1, tipe: "pintu",   garis: "v", pos: 6,   a: 6.7, b: 7.5, engsel: "a", buka: +1 },  // selasar → studio
-  { lantai: 1, tipe: "pintu",   garis: "h", pos: 6.5, a: 7.0, b: 7.9, engsel: "a", buka: +1 },  // garasi → studio
+  { lantai: 1, tipe: "pintu",   garis: "h", pos: 6.5, a: 6.9, b: 7.7, engsel: "a", buka: +1 },  // garasi → studio (bebas kolom D3)
   { lantai: 1, tipe: "jendela", garis: "h", pos: 0,   a: 4.3, b: 5.7 },
   { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 1.8, b: 3.0 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 7.6, b: 8.9 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 0,   a: 4.6, b: 5.9 },
   { lantai: 1, tipe: "boven",   garis: "h", pos: 10,  a: 4.6, b: 5.4 },
   { lantai: 1, tipe: "jendela", garis: "v", pos: 10,  a: 7.6, b: 9.4 },
-  { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 7.5, b: 9.3 },
+  { lantai: 1, tipe: "jendela", garis: "h", pos: 10,  a: 8.4, b: 9.8 },
   // lantai 2
-  { lantai: 2, tipe: "pintu",   garis: "h", pos: 4,    a: 7.3, b: 8.1, engsel: "a", buka: -1 },  // studio kerja
-  { lantai: 2, tipe: "pintu",   garis: "v", pos: 10.5, a: 1.6, b: 2.5, engsel: "a", buka: +1 },  // ke balkon
+  { lantai: 2, tipe: "kaca",    garis: "v", pos: 10.5, a: 0.1, b: 3.9 },   // dinding kaca geser penuh ke balkon (ringan: tanpa balok anak)
   { lantai: 2, tipe: "pintu",   garis: "v", pos: 8,    a: 4.1, b: 4.9, engsel: "a", buka: +1 },  // K. utama
-  { lantai: 2, tipe: "bukaan",  garis: "v", pos: 8,    a: 5.4, b: 6.2 },                          // kamar–walk-in
   { lantai: 2, tipe: "bukaan",  garis: "h", pos: 7.5,  a: 7.0, b: 7.9 },                          // walk-in–KM dalam
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 5.2, b: 5.9, engsel: "a", buka: +1 },  // KM bersama
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 1.5, b: 2.3, engsel: "b", buka: +1 },  // K. anak
   { lantai: 2, tipe: "pintu",   garis: "h", pos: 5,    a: 2.7, b: 3.5, engsel: "a", buka: +1 },  // K. tamu
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 5.0, b: 6.2 },
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 7.8, b: 9.2 },
-  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,   a: 5.2, b: 7.2 },
-  { lantai: 2, tipe: "boven",   garis: "h", pos: 10,   a: 6.0, b: 6.6 },
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 4.4, b: 5.7 },
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 0,    a: 8.4, b: 9.8 },
+  { lantai: 2, tipe: "jendela", garis: "v", pos: 12,   a: 4.5, b: 6.2 },
+  { lantai: 2, tipe: "boven",   garis: "h", pos: 10,   a: 6.3, b: 6.9 },
   { lantai: 2, tipe: "jendela", garis: "v", pos: 0,    a: 7.8, b: 9.2 },
-  { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 2.9, b: 4.1 },
+  { lantai: 2, tipe: "jendela", garis: "h", pos: 10,   a: 2.9, b: 3.7 },
   { lantai: 2, tipe: "jendelaTinggi", garis: "v", pos: 0, a: 0.3, b: 1.8 },  // cahaya ke void
   // lantai 3
   { lantai: 3, tipe: "pintu",   garis: "v", pos: 1.2,  a: 0.9, b: 1.7, engsel: "a", buka: +1 },   // bordes → rooftop
   { lantai: 2, tipe: "jendelaTinggi", garis: "h", pos: 0, a: 0.5, b: 3.5 },
 ];
 
+// Ruang terbuka (open space): pasangan ruangan bersebelahan yang TIDAK diberi dinding di antaranya
+// (tetap dua ruangan dengan label & luas masing-masing).
+export const TANPA_DINDING = [
+  { lantai: 1, a: "Living Room", b: "R. Makan" },
+  { lantai: 1, a: "Living Room", b: "Foyer" },
+  { lantai: 1, a: "R. Makan",    b: "Dapur" },
+  { lantai: 1, a: "Dapur",       b: "Selasar" },
+  { lantai: 1, a: "Foyer",       b: "Selasar" },
+  { lantai: 2, a: "Dapur Kering", b: "Studio Kerja" },
+  { lantai: 2, a: "Koridor",      b: "Studio Kerja" },
+  { lantai: 2, a: "Walk-in",      b: "K. Tidur Utama" },
+];
+
 // tinggi bukaan dari lantai: [ambang bawah, ambang atas]
 export const TINGGI_BUKAAN = {
-  pintu: [0, 2.1], bukaan: [0, 2.4], jendela: [0.9, 2.1], boven: [1.7, 2.1], jendelaTinggi: [0.3, 2.6],
+  pintu: [0, 2.1], bukaan: [0, 2.4], jendela: [0.9, 2.1], boven: [1.7, 2.1], jendelaTinggi: [0.3, 2.6], kaca: [0, 2.6],
 };
 
 export const BANGUNAN = ["ruang", "mezanin"];         // dihitung luas bangunan

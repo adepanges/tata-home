@@ -1,7 +1,7 @@
 // Model dinding bersama untuk denah 2D dan model 3D.
 // Semua dinding berupa garis sumbu (horizontal "h" di y=pos, vertikal "v" di x=pos)
 // dengan rentang a..b. Dinding yang berimpit digabung, lalu dipotong oleh pintu/jendela.
-import { TEBAL_DINDING } from "./data.js";
+import { TEBAL_DINDING, TANPA_DINDING } from "./data.js";
 
 const EPS = 1e-6;
 const sama = (a, b) => Math.abs(a - b) < 1e-6;
@@ -10,6 +10,11 @@ export const BERDINDING = ["ruang", "balkon", "mezanin", "void", "rooftop"];
 
 export const overlap = (a, b) =>
   a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
+
+// open space: dua ruangan bersebelahan tanpa dinding di antaranya (lihat TANPA_DINDING)
+export const tanpaDinding = (r, o) => TANPA_DINDING.some((p) => p.lantai === r.lantai &&
+  ((p.a === r.nama && p.b === o.nama) || (p.b === r.nama && p.a === o.nama)));
+const punyaPasangan = (r) => TANPA_DINDING.some((p) => p.lantai === r.lantai && (p.a === r.nama || p.b === r.nama));
 
 // Railing dibuka di ujung tangga: anak tangga teratas dari tangga lantai bawah,
 // atau anak tangga terbawah dari tangga yang berangkat dari lantai ini.
@@ -31,7 +36,7 @@ function diUjungTangga(ruang, dibangun, lantai, o, pos, m) {
 export function segmenSisi(ruang, dibangun, r) {
   const terbukaKe = ["void", "mezanin"];
   const tetangga = ruang.filter((o) => o !== r && o.lantai === r.lantai && dibangun(o) &&
-    (terbukaKe.includes(o.jenis) || (r.grup && o.grup === r.grup)));
+    (terbukaKe.includes(o.jenis) || (r.grup && o.grup === r.grup) || tanpaDinding(r, o)));
   const sisi = [
     { o: "h", pos: r.y,       a: r.x, b: r.x + r.w },
     { o: "h", pos: r.y + r.h, a: r.x, b: r.x + r.w },
@@ -44,11 +49,11 @@ export function segmenSisi(ruang, dibangun, r) {
     for (let t = s.a; t < s.b - EPS; t += STEP) {
       const m = t + STEP / 2;
       let kind = r.jenis === "balkon" ? "rail" : r.jenis === "rooftop" ? "parapet" : "wall";
-      if (terbukaKe.includes(r.jenis) || r.grup) {
+      if (terbukaKe.includes(r.jenis) || r.grup || punyaPasangan(r)) {
         const n = tetangga.find((o) => s.o === "h"
           ? m > o.x && m < o.x + o.w && (sama(o.y, s.pos) || sama(o.y + o.h, s.pos))
           : m > o.y && m < o.y + o.h && (sama(o.x, s.pos) || sama(o.x + o.w, s.pos)));
-        if (n && r.grup && n.grup === r.grup) kind = "none";
+        if (n && ((r.grup && n.grup === r.grup) || tanpaDinding(r, n))) kind = "none";
         else if (n && !terbukaKe.includes(r.jenis)) kind = "wall";
         else if (n) kind = r.jenis === "mezanin" && n.jenis === "void" && !diUjungTangga(ruang, dibangun, r.lantai, s.o, s.pos, m)
           ? "rail" : "none";
@@ -115,4 +120,12 @@ export function modelDinding(ruang, semuaBukaan, lantai, dibangun) {
     }
   }
   return out;
+}
+
+// tiang pendopo: 4 sudut + tiang tengah di sisi panjang bila bentang > 4,5 m (masuk 0,4 m dari tepi deck)
+export function tiangPendopo(r, inset = 0.4) {
+  const xs = [r.x + inset, r.x + r.w - inset], ys = [r.y + inset, r.y + r.h - inset];
+  if (r.w > 4.5) xs.splice(1, 0, r.x + r.w / 2);
+  if (r.h > 4.5) ys.splice(1, 0, r.y + r.h / 2);
+  return xs.flatMap((x, i) => ys.filter((_, j) => i === 0 || i === xs.length - 1 || j === 0 || j === ys.length - 1).map((y) => [x, y]));
 }
