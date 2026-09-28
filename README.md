@@ -22,4 +22,13 @@ Edit konstanta di bagian `DATA DENAH` pada `index.html`:
 - `LAHAN` — ukuran lahan (m)
 - `TAHAP` — nama & warna tiap tahap
 - `RUANG` — daftar ruangan: `x, y, w, h` (m, y=0 = sisi depan/jalan), `lantai`, `tahap`,
-  `jenis` (`"ruang"` berdinding, `"terbuka"` hanya lantai, `"balkon"` lantai + railing)
+  `jenis`:
+  - `"ruang"` berdinding + atap, `"terbuka"` hanya lantai (carport/taman), `"balkon"` lantai + railing
+  - `"tangga"` anak tangga (opsi `arah: "belakang" | "depan"`)
+  - `"void"` lubang tembus dua lantai, `"mezanin"` lantai atas di tepi void (railing menghadap void)
+  - opsi `mobil: n` untuk menggambar n mobil di carport
+- `VOID` — ukuran void di atas living room (4 → 4×4 m, 3 → 3×3 m)
+
+## Preview
+
+GitHub Pages: https://adepanges.github.io/tata-home/
