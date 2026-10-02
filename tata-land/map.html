@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persil Map</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; font: 13px/1.4 system-ui, sans-serif; color: #1c1c1e; }
+  #map { position: absolute; inset: 0; background: #222; }
+  #panel { position: absolute; top: 10px; right: 10px; z-index: 2; width: 400px; max-height: calc(100% - 40px); overflow: auto;
+           background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.35); padding: 12px 14px; box-sizing: border-box; }
+  #tools { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; max-width: calc(100% - 40px);
+           background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.35); padding: 6px 8px; }
+  #tools button { font: 600 13px system-ui, sans-serif; padding: 5px 12px; border: 0; border-radius: 6px; background: #1c1c1e; color: #fff; cursor: pointer; }
+  #tools button:disabled { opacity: .4; cursor: default; }
+  #tools .view { display: flex; gap: 4px; }
+  #tools .view button { background: #e9e9ee; color: #1c1c1e; padding: 5px 9px; }
+  #tools select { font: inherit; padding: 3px; }
+  #tools label { display: flex; gap: 6px; align-items: center; }
+  #tools [hidden] { display: none; }
+  .maplibregl-ctrl-top-left { top: 50px; }
+  h1 { font-size: 15px; margin: 0; }
+  .sub { color: #666; margin: 2px 0 10px; }
+  h2 { font-size: 11px; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: .05em; color: #666; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 3px 4px; text-align: right; border-bottom: 1px solid #eee; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; color: #666; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stats b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stats span { color: #666; font-size: 11px; }
+  .note { color: #777; font-size: 11px; margin-top: 12px; }
+  #cursor { font-variant-numeric: tabular-nums; }
+  .vtx { width: 10px; height: 10px; border-radius: 50%; background: #ff3b30; border: 2px solid #fff; box-sizing: border-box; cursor: pointer; }
+  .vtx span, .elabel { white-space: nowrap; color: #fff; font-weight: 700; pointer-events: none;
+                       text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000; }
+  .vtx span { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); }
+  .elabel { color: #ffe066; font-weight: 600; }
+  .elabel.dlabel { color: #fff; }
+  .lotlabel { color: #fff; font-weight: 700; text-align: center; white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .arrow { font-size: 44px; line-height: 1; color: rgba(255,255,255,.9); text-shadow: 0 0 4px #000; pointer-events: none; }
+  @media (max-width: 600px) { #panel { top: auto; bottom: 24px; left: 10px; right: 10px; width: auto; max-height: 45%; } }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="tools">
+  <button id="btn3d" disabled>3D</button>
+  <select id="base"><option value="sat">Satellite</option><option value="osm">OpenStreetMap</option></select>
+  <span class="view">
+    <button id="rotL" title="Rotate left" aria-label="Rotate left">⟲</button>
+    <button id="rotR" title="Rotate right" aria-label="Rotate right">⟳</button>
+    <button id="tiltUp" title="Tilt toward the horizon">Tilt +</button>
+    <button id="tiltDn" title="Tilt toward top-down">Tilt −</button>
+    <button id="orbit" title="Slowly circle around the parcel">Orbit</button>
+  </span>
+  <label id="exagWrap" hidden>Height <input id="exag" type="range" min="1" max="5" step="0.5" value="1"> <span id="exagVal">1×</span></label>
+</div>
+<div id="panel">
+  <h1>Bidang Tanah · Tipe Hak Kosong</h1>
+  <div class="sub">Near -7.59324, 110.06921 · traced from BHUMI ATR/BPN</div>
+  <div class="stats">
+    <div><b id="area"></b><span>area (m²)</span></div>
+    <div><b id="perim"></b><span>perimeter (m)</span></div>
+    <div><b>410</b><span>official luas (m²)</span></div>
+    <div><b id="elev"></b><span>elevation (m)</span></div>
+    <div><b id="slope"></b><span>avg slope</span></div>
+    <div><b id="aspect"></b><span>downhill toward</span></div>
+  </div>
+  <h2>Division</h2>
+  <table><thead><tr><th></th><th>Area</th><th>Share</th><th>Perimeter</th></tr></thead><tbody id="lots"></tbody></table>
+  <div class="sub" id="divider"></div>
+  <h2>Points</h2>
+  <table><thead><tr><th></th><th>Latitude</th><th>Longitude</th><th>Elev</th><th>Angle</th></tr></thead><tbody id="pts"></tbody></table>
+  <h2>Sides</h2>
+  <table><thead><tr><th></th><th>Length</th><th>Bearing</th><th>Δh</th><th>Slope</th></tr></thead><tbody id="sides"></tbody></table>
+  <p class="note">Cursor: <span id="cursor">—</span><br>
+    Vertices digitized from BHUMI's rendered parcel (~8.5 cm/px), accuracy roughly ±10–20 cm.
+    Not a legal survey — use the Surat Ukur from Kantor Pertanahan for that.
+    P1 moved 3 m toward P2, then 2 m toward P6, by hand (it overlapped the road).
+    P7 added on P1–P2, 14.10 m from P1, to split off the Phase 1 east lot.<br>
+    Elevation is SRTM 30 m (whole metres, ±5–10 m absolute). The overall slope and direction are meaningful;
+    per-side slopes on short sides are not. For real detail use DEMNAS 8 m tile 1408-23 (tanahair.indonesia.go.id) or a field survey.<br>
+    3D terrain: AWS Terrain Tiles (SRTM-based), so the ground is smoothed. The white arrow points downhill.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script>
+// [lon, lat], counter-clockwise from the NE corner. P7 was added later, so it sits between P1 and P2 in the ring.
+const NAMES = ['P1', 'P7', 'P2', 'P3', 'P4', 'P5', 'P6'];
+const PTS = [
+  [110.06934868675057, -7.593187131967992], // moved 3 m toward P2, then 2 m toward P6, off the road; BHUMI trace: 110.06937555239311, -7.593166530393382
+  [110.06922097988566, -7.5931913097973185], // P7: on P1–P2, 14.10 m from P1 — top end of the Phase 1 / west divider
+  [110.06904861760688, -7.593196948493277],
+  [110.06905700188257, -7.593270769986618],
+  [110.06924699167578, -7.593259683391839],
+  [110.06929664912462, -7.593345951063653],
+  [110.06935061324131, -7.593358567656895],
+];
+// Elevation (m, EGM96) per point — SRTM 30 m via opentopodata.org, bilinear. Swap in DEMNAS 8 m (tile 1408-23) values if you have them.
+const ELEV = [288, 290, 293, 290, 287, 283, 282];
+// Split along P7–P4; Phase 1 is the east lot
+const LOTS = [
+  { name: 'Phase 1 · east', ring: ['P1', 'P7', 'P4', 'P5', 'P6'], color: '#ffcc00' },
+  { name: 'West', ring: ['P7', 'P2', 'P3', 'P4'], color: '#0a84ff' },
+];
+const DIVIDER = ['P7', 'P4'];
+
+// ponytail: local tangent plane (WGS84 radii at centroid) — mm-accurate at parcel scale; swap for UTM/proj4 if this grows to km.
+const rad = Math.PI / 180, a = 6378137, e2 = 0.00669437999014;
+const lat0 = PTS.reduce((s, p) => s + p[1], 0) / PTS.length * rad;
+const w = 1 - e2 * Math.sin(lat0) ** 2, M = a * (1 - e2) / w ** 1.5, N = a / Math.sqrt(w);
+const xy = PTS.map(([lo, la]) => [(lo - PTS[0][0]) * rad * N * Math.cos(lat0), (la - PTS[0][1]) * rad * M]);
+const n = xy.length, next = i => xy[(i + 1) % n], prev = i => xy[(i + n - 1) % n];
+
+const signed = xy.reduce((s, p, i) => s + p[0] * next(i)[1] - next(i)[0] * p[1], 0) / 2;
+const edges = xy.map((p, i) => { const dx = next(i)[0] - p[0], dy = next(i)[1] - p[1];
+  return { len: Math.hypot(dx, dy), az: (Math.atan2(dx, dy) / rad + 360) % 360 }; });
+const angle = i => { const c = xy[i], p = prev(i), q = next(i);
+  const d = (Math.atan2(p[1] - c[1], p[0] - c[0]) - Math.atan2(q[1] - c[1], q[0] - c[0])) / rad * Math.sign(signed);
+  return (d % 360 + 360) % 360; };
+
+// least-squares plane z = gx·E + gy·N + c through the vertices — a 30 m DEM can't resolve more than this trend on a 40 m parcel
+const S = f => xy.reduce((s, [x, y], i) => s + f(x, y, ELEV[i]), 0);
+const A = [[S(x => x * x), S((x, y) => x * y), S(x => x)], [S((x, y) => x * y), S((x, y) => y * y), S((x, y) => y)], [S(x => x), S((x, y) => y), n]];
+const B = [S((x, y, z) => x * z), S((x, y, z) => y * z), S((x, y, z) => z)];
+const det = m => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+const solve = k => det(A.map((row, i) => row.map((v, j) => j === k ? B[i] : v))) / det(A);
+const gx = solve(0), gy = solve(1);
+const downhill = (Math.atan2(-gx, -gy) / rad + 360) % 360;
+const compass = b => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(b / 45) % 8];
+
+const at = nm => NAMES.indexOf(nm);
+const around = (r, f) => r.reduce((s, p, i) => s + f(p, r[(i + 1) % r.length]), 0);
+LOTS.forEach(l => { l.xy = l.ring.map(nm => xy[at(nm)]);
+  l.area = Math.abs(around(l.xy, (p, q) => p[0] * q[1] - q[0] * p[1]) / 2);
+  l.perim = around(l.xy, (p, q) => Math.hypot(q[0] - p[0], q[1] - p[1])); });
+const [d0, d1] = DIVIDER.map(nm => xy[at(nm)]);
+const divLen = Math.hypot(d1[0] - d0[0], d1[1] - d0[1]), divAz = (Math.atan2(d1[0] - d0[0], d1[1] - d0[1]) / rad + 360) % 360;
+
+const $ = id => document.getElementById(id);
+$('area').textContent = Math.abs(signed).toFixed(1);
+$('lots').innerHTML = LOTS.map(l => `<tr><td><span class="sw" style="background:${l.color}"></span>${l.name}</td><td>${l.area.toFixed(1)} m²</td>` +
+  `<td>${(l.area / Math.abs(signed) * 100).toFixed(0)}%</td><td>${l.perim.toFixed(2)} m</td></tr>`).join('');
+$('divider').textContent = `Divider ${DIVIDER.join(' → ')}: ${divLen.toFixed(2)} m, bearing ${divAz.toFixed(1)}°`;
+$('perim').textContent = edges.reduce((s, e) => s + e.len, 0).toFixed(2);
+$('elev').textContent = `${Math.min(...ELEV)}–${Math.max(...ELEV)}`;
+$('slope').textContent = (Math.hypot(gx, gy) * 100).toFixed(0) + '%';
+$('aspect').textContent = `${compass(downhill)} ${downhill.toFixed(0)}°`;
+$('pts').innerHTML = PTS.map(([lo, la], i) =>
+  `<tr><td>${NAMES[i]}</td><td>${la.toFixed(8)}</td><td>${lo.toFixed(8)}</td><td>${ELEV[i]} m</td><td>${angle(i).toFixed(1)}°</td></tr>`).join('');
+$('sides').innerHTML = edges.map((e, i) => { const dh = ELEV[(i + 1) % n] - ELEV[i];
+  return `<tr><td>${NAMES[i]} → ${NAMES[(i + 1) % n]}</td><td>${e.len.toFixed(2)} m</td><td>${e.az.toFixed(1)}°</td>` +
+    `<td>${dh > 0 ? '+' : ''}${dh} m</td><td>${(dh / e.len * 100).toFixed(0)}%</td></tr>`; }).join('');
+
+// map
+const DEM = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+              tileSize: 256, maxzoom: 15, encoding: 'terrarium', attribution: 'Terrain: AWS Terrain Tiles' };
+const lons = PTS.map(p => p[0]), lats = PTS.map(p => p[1]);
+const map = new maplibregl.Map({
+  container: 'map', maxZoom: 22, maxPitch: 80, center: PTS[0], zoom: 19,
+  // ponytail: auto-clamping the camera target to terrain never kicks in at parcel zoom (camera starts underground, 5.24),
+  // so we pin it to the known ground height instead — fine near the parcel, drifts if you pan far up/down a valley.
+  centerClampedToGround: false,
+  style: {
+    version: 8,
+    sources: {
+      sat: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+             tileSize: 256, maxzoom: 18, attribution: 'Imagery © Esri' }, // z19 is blank in this area
+      osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors' },
+      dem: DEM,
+      shade: DEM, // MapLibre wants separate sources for terrain and hillshade
+      parcel: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...PTS, PTS[0]]] } } },
+      lots: { type: 'geojson', data: { type: 'FeatureCollection', features: LOTS.map(l => ({ type: 'Feature', properties: { color: l.color },
+              geometry: { type: 'Polygon', coordinates: [[...l.ring, l.ring[0]].map(nm => PTS[at(nm)])] } })) } },
+      divider: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: DIVIDER.map(nm => PTS[at(nm)]) } } },
+    },
+    layers: [
+      { id: 'sat', type: 'raster', source: 'sat' },
+      { id: 'osm', type: 'raster', source: 'osm', layout: { visibility: 'none' } },
+      { id: 'shade', type: 'hillshade', source: 'shade', layout: { visibility: 'none' }, paint: { 'hillshade-exaggeration': 0.4 } },
+      { id: 'fill', type: 'fill', source: 'lots', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.3 } },
+      { id: 'line', type: 'line', source: 'parcel', paint: { 'line-color': '#ff3b30', 'line-width': 2 } },
+      { id: 'divider', type: 'line', source: 'divider', paint: { 'line-color': '#fff', 'line-width': 2, 'line-dasharray': [2, 1.5] } },
+    ],
+  },
+});
+// pad out the panel so the map centre — the pivot for rotate/tilt/orbit — sits on the parcel, not under the panel
+map.setPadding(innerWidth > 600 ? { top: 0, bottom: 0, left: 0, right: 420 } : { top: 0, bottom: innerHeight / 2, left: 0, right: 0 });
+map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 60, maxZoom: 20, animate: false });
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
+map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
+map.on('load', () => $('btn3d').disabled = false); // setTerrain throws before the style loads
+
+const el = (cls, html) => Object.assign(document.createElement('div'), { className: cls, innerHTML: html });
+const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+PTS.forEach((p, i) => new maplibregl.Marker({ opacityWhenCovered: '1', element: el('vtx', `<span>${NAMES[i]} · ${ELEV[i]} m</span>`) }).setLngLat(p)
+  .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<b>${NAMES[i]}</b><br>${p[1].toFixed(8)}, ${p[0].toFixed(8)}<br>Elevation ${ELEV[i]} m`))
+  .addTo(map));
+edges.forEach((e, i) => new maplibregl.Marker({ opacityWhenCovered: '1', element: el('elabel', e.len.toFixed(2) + ' m') })
+  .setLngLat(mid(PTS[i], PTS[(i + 1) % n])).addTo(map));
+new maplibregl.Marker({ opacityWhenCovered: '1', element: el('elabel dlabel', divLen.toFixed(2) + ' m') })
+  .setLngLat(mid(...DIVIDER.map(nm => PTS[at(nm)]))).addTo(map);
+
+// inside point of ring r farthest from every edge — where the arrow and lot labels go, so they never sit on a boundary
+// ponytail: 0.5 m grid search, O(area) — swap for the polylabel library if this ever handles large polygons
+const segDist = ([px, py], [ax, ay], [bx, by]) => { const dx = bx - ax, dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
+const pole = r => {
+  const nx = i => r[(i + 1) % r.length];
+  const inside = ([px, py]) => r.reduce((ins, [x1, y1], i) => { const [x2, y2] = nx(i);
+    return (y1 > py) !== (y2 > py) && px < x1 + (py - y1) * (x2 - x1) / (y2 - y1) ? !ins : ins; }, false);
+  const xs = r.map(p => p[0]), ys = r.map(p => p[1]);
+  let best = r[0], bestD = -1;
+  for (let x = Math.min(...xs); x <= Math.max(...xs); x += 0.5) for (let y = Math.min(...ys); y <= Math.max(...ys); y += 0.5) {
+    if (!inside([x, y])) continue;
+    const d = Math.min(...r.map((p, i) => segDist([x, y], p, nx(i))));
+    if (d > bestD) { bestD = d; best = [x, y]; } }
+  return [...best, bestD]; }; // [x, y, clearance to nearest edge]
+const toLL = ([x, y]) => [PTS[0][0] + x / (N * Math.cos(lat0)) / rad, PTS[0][1] + y / M / rad];
+LOTS.forEach(l => new maplibregl.Marker({ opacityWhenCovered: '1', element: el('lotlabel', `${l.name}<br>${l.area.toFixed(1)} m²`) })
+  .setLngLat(toLL(pole(l.xy))).addTo(map));
+// the whole-parcel pole lands under the Phase 1 label, so the arrow sits a few metres further downhill —
+// on the ground, so it holds in 3D too, and within the pole's clearance so it stays inside the parcel
+const [ax, ay, clear] = pole(xy), shift = Math.min(4, clear * 0.8);
+new maplibregl.Marker({ opacityWhenCovered: '1', element: el('arrow', '➜'), rotation: downhill - 90, rotationAlignment: 'map', pitchAlignment: 'map' })
+  .setLngLat(toLL([ax + shift * Math.sin(downhill * rad), ay + shift * Math.cos(downhill * rad)])).addTo(map);
+
+let is3d = false;
+const ground = ELEV.reduce((s, v) => s + v, 0) / n;
+const setTerrain = () => { const k = +$('exag').value;
+  map.setTerrain(is3d ? { source: 'dem', exaggeration: k } : null);
+  map.setCenterElevation(is3d ? ground * k : 0); };
+// view buttons for touchpads (keyboard: click the map, then Shift + arrow keys)
+let orbitId = 0;
+const stopOrbit = () => { cancelAnimationFrame(orbitId); orbitId = 0; $('orbit').textContent = 'Orbit'; };
+const view = fn => () => { stopOrbit(); fn(); };
+$('rotL').onclick = view(() => map.easeTo({ bearing: map.getBearing() + 45, duration: 600 })); // +bearing turns the map anticlockwise
+$('rotR').onclick = view(() => map.easeTo({ bearing: map.getBearing() - 45, duration: 600 }));
+$('tiltUp').onclick = view(() => map.easeTo({ pitch: map.getPitch() + 15, duration: 600 }));
+$('tiltDn').onclick = view(() => map.easeTo({ pitch: map.getPitch() - 15, duration: 600 }));
+$('orbit').onclick = () => { if (orbitId) return stopOrbit();
+  $('orbit').textContent = 'Stop';
+  const spin = () => { map.setBearing(map.getBearing() - 0.3); orbitId = requestAnimationFrame(spin); };
+  spin(); };
+map.on('mousedown', stopOrbit);
+map.on('touchstart', stopOrbit);
+
+$('btn3d').onclick = () => {
+  stopOrbit();
+  is3d = !is3d;
+  setTerrain();
+  map.setLayoutProperty('shade', 'visibility', is3d ? 'visible' : 'none');
+  map.easeTo({ pitch: is3d ? 65 : 0, bearing: is3d ? downhill - 90 : 0, duration: 1200 }); // side-on, downhill to the right, so the slope shows
+  $('btn3d').textContent = is3d ? '2D' : '3D';
+  $('exagWrap').hidden = !is3d;
+};
+$('exag').oninput = () => { $('exagVal').textContent = $('exag').value + '×'; setTerrain(); };
+$('base').onchange = e => ['sat', 'osm'].forEach(id => map.setLayoutProperty(id, 'visibility', id === e.target.value ? 'visible' : 'none'));
+map.on('mousemove', e => $('cursor').textContent = e.lngLat.lat.toFixed(8) + ', ' + e.lngLat.lng.toFixed(8));
+</script>
+</body>
+</html>
