@@ -543,6 +543,8 @@ export function buat3D(host) {
 
   return {
     render,
+    // grup rumah (koordinat denah: x timur, y atas, z = y denah) & renderer — dipakai tata-land/map.html
+    rumah, renderer,
     // render ulang tanpa animasi tumbuh (mis. saat ganti opsi tampilan)
     renderUlang(s) { tahapSebelumnya = s.tahap; render(s); },
     kameraAtas(on) { kameraKe(on ? KAMERA_ATAS : KAMERA_AWAL, [LAHAN.w / 2, 2, LAHAN.h / 2]); },

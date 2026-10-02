@@ -28,6 +28,17 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
   **Perhitungan final wajib oleh insinyur struktur** (SNI 2847, SNI 1727, SNI 1726); pondasi & kolom tahap 1 dihitung
   untuk beban akhir 3 lantai.
 
+## Rumah di atas lahan (`tata-land/map.html`)
+
+Peta bidang tanah (MapLibre + terrain 3D) dengan model rumah yang sama ditaruh di atasnya:
+
+- Depan rumah (carport, x = 12 di denah) menghadap jalan di sisi timur P1–P6; pojok depan-utara di P1.
+  Slider: geser sepanjang jalan, mundur dari jalan, putar, tahap, dan **peil lantai ±0.00** (relatif tanah pojok depan-utara).
+- **Galian / urugan**: tinggi tanah di 4 pojok rumah (default dari kemiringan SRTM, ganti dengan hasil ukur selang air /
+  waterpass), volume galian & urugan, tombol *Balance cut/fill*, potongan melintang (true scale), label dig/fill di peta.
+- **⤓ Google Earth (.kmz)**: batas lahan + model rumah COLLADA (Google Earth Pro desktop: File → Open).
+  Google Earth web tidak bisa menampilkan model 3D — nyalakan folder *Massing* (kotak massa bangunan) di sana.
+
 ## Menjalankan
 
 Karena memakai ES modules, buka lewat web server (bukan double-click file):
@@ -50,6 +61,8 @@ Preview GitHub Pages: https://adepanges.github.io/tata-home/
 | `js/app.js` | Kontrol UI & ringkasan luas |
 | `js/struktur.js` | Grid, kolom, balok (induk/anak/void/sloof/ring…), analisa dinding di atas pelat, jalur beban & dimensi awal |
 | `js/ringkasanStruktur.js` | Tabel ringkasan & legenda struktur |
+| `tata-land/map.html` | Peta lahan 3D + rumah, galian/urugan, ekspor KMZ |
+| `tata-land/kmz.js` | Ekspor KMZ (KML + COLLADA) untuk Google Earth |
 | `docs/catatan-shaft-listrik.md` | Catatan (belum diterapkan): jalur listrik lewat shaft servis, posisi panel |
 
 ## Mengubah denah (`js/data.js`)

@@ -41,6 +41,17 @@
   .lotlabel { color: #fff; font-weight: 700; text-align: center; white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000; }
   .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
   .arrow { font-size: 44px; line-height: 1; color: rgba(255,255,255,.9); text-shadow: 0 0 4px #000; pointer-events: none; }
+  .ctl { display: grid; gap: 4px; }
+  .ctl label { display: grid; grid-template-columns: 82px 1fr 52px; align-items: center; gap: 6px; }
+  .ctl label:first-child { display: flex; }
+  .ctl output { text-align: right; font-variant-numeric: tabular-nums; }
+  .corners input { width: 64px; font: inherit; text-align: right; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .row button { font: 600 12px system-ui, sans-serif; padding: 5px 10px; border: 1px solid #ccc; border-radius: 6px; background: #f4f4f6; cursor: pointer; }
+  .row button.dark { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+  .cut { color: #c62828; } .fill { color: #1565c0; }
+  .cmark { font: 700 11px system-ui, sans-serif; color: #fff; padding: 1px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+  #section { display: block; margin-top: 8px; height: auto; }
   @media (max-width: 600px) { #panel { top: auto; bottom: 24px; left: 10px; right: 10px; width: auto; max-height: 45%; } }
 </style>
 </head>
@@ -69,6 +80,33 @@
     <div><b id="slope"></b><span>avg slope</span></div>
     <div><b id="aspect"></b><span>downhill toward</span></div>
   </div>
+  <h2>House · Tata Home</h2>
+  <div class="ctl">
+    <label><input id="hShow" type="checkbox" checked> Show house</label>
+    <label>Phase <input id="hTahap" type="range" min="0" max="3" step="1" value="1"><output id="hTahapV"></output></label>
+    <label title="Slide the house along the road (south +)">Along road <input id="hAlong" type="range" min="-3" max="9" step="0.1" value="0"><output></output></label>
+    <label title="Distance of the house front from the road boundary">Setback <input id="hSet" type="range" min="0" max="6" step="0.1" value="0"><output></output></label>
+    <label title="Extra rotation; 0 = front parallel to the road">Rotate <input id="hRot" type="range" min="-20" max="20" step="0.5" value="0"><output></output></label>
+    <label title="Floor level ±0.00 relative to the ground at the front-north (road) corner">Floor ±0.00 <input id="hFloor" type="range" min="-4" max="4" step="0.05" value="0"><output></output></label>
+  </div>
+  <div class="sub">Floor ±0.00 is measured from the ground at the <b>front-north corner</b> (road side) — the easiest corner to mark with a stake.</div>
+  <h2>Ground at house corners · cut / fill</h2>
+  <table class="corners"><thead><tr><th>Corner</th><th>Ground</th><th>vs floor</th></tr></thead><tbody id="corners"></tbody></table>
+  <div class="row"><button id="hBalance" title="Set the floor where cut volume = fill volume">Balance cut/fill</button>
+    <button id="hDem" title="Forget typed heights, use the slope from the DEM again">Ground from DEM</button></div>
+  <div class="stats" style="margin-top:8px">
+    <div><b id="vCut"></b><span>dig (cut) m³</span></div>
+    <div><b id="vFill"></b><span>fill (urug) m³</span></div>
+    <div><b id="vNet"></b><span>net (+ = soil to remove)</span></div>
+  </div>
+  <svg id="section" width="100%"></svg>
+  <div class="sub" id="groundSrc"></div>
+  <div class="row"><button id="kmzBtn" class="dark">⤓ Download for Google Earth (.kmz)</button></div>
+  <p class="note">Ground heights are relative metres. Measure the 4 corners on site with a water hose level (selang air) or
+    waterpass from the front-north stake and type them in — that is far more accurate than the DEM. Volumes cover the
+    12 × 10 m footprint only (no foundation trenches, no slopes/retaining walls outside it).<br>
+    Google Earth Pro (desktop): File → Open → the .kmz. Google Earth web: Projects → New → Import KML file; web can't show
+    3D models, so turn on the "Massing" folder there.</p>
   <h2>Division</h2>
   <table><thead><tr><th></th><th>Area</th><th>Share</th><th>Perimeter</th></tr></thead><tbody id="lots"></tbody></table>
   <div class="sub" id="divider"></div>
@@ -87,7 +125,17 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.js"></script>
-<script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { buat3D } from '../js/tampilan3d.js';
+import { LAHAN, TAHAP } from '../js/data.js';
+import { colladaDari, kmz } from './kmz.js';
 // [lon, lat], counter-clockwise from the NE corner. P7 was added later, so it sits between P1 and P2 in the ring.
 const NAMES = ['P1', 'P7', 'P2', 'P3', 'P4', 'P5', 'P6'];
 const PTS = [
@@ -232,7 +280,7 @@ let is3d = false;
 const ground = ELEV.reduce((s, v) => s + v, 0) / n;
 const setTerrain = () => { const k = +$('exag').value;
   map.setTerrain(is3d ? { source: 'dem', exaggeration: k } : null);
-  map.setCenterElevation(is3d ? ground * k : 0); };
+  map.setCenterElevation(is3d ? ground * k : 0); map.triggerRepaint(); };
 // view buttons for touchpads (keyboard: click the map, then Shift + arrow keys)
 let orbitId = 0;
 const stopOrbit = () => { cancelAnimationFrame(orbitId); orbitId = 0; $('orbit').textContent = 'Orbit'; };
@@ -260,6 +308,179 @@ $('btn3d').onclick = () => {
 $('exag').oninput = () => { $('exagVal').textContent = $('exag').value + '×'; setTerrain(); };
 $('base').onchange = e => ['sat', 'osm'].forEach(id => map.setLayoutProperty(id, 'visibility', id === e.target.value ? 'visible' : 'none'));
 map.on('mousemove', e => $('cursor').textContent = e.lngLat.lat.toFixed(8) + ', ' + e.lngLat.lng.toFixed(8));
+// ================= house (Tata Home) on the parcel =================
+// Plan frame (js/data.js): x east (x = LAHAN.w is the road/front), y south. The plan's front-north corner (LAHAN.w, 0)
+// is anchored on the road boundary at P1, then slid along the road / set back / rotated by the sliders.
+const gc = solve(2), gAbs = (E, Nn) => gx * E + gy * Nn + gc; // DEM plane, absolute m
+const P6xy = xy[at('P6')], roadLen = Math.hypot(P6xy[0], P6xy[1]);
+const u0 = [P6xy[0] / roadLen, P6xy[1] / roadLen];  // along the road, P1 → P6 (≈ south) = plan +y
+const e0 = [-u0[1], u0[0]];                          // out toward the road (≈ east) = plan +x
+const CORNERS = [ // plan corners; front = road side
+  { key: 'fn', name: 'Front-north', p: [LAHAN.w, 0] }, { key: 'fs', name: 'Front-south', p: [LAHAN.w, LAHAN.h] },
+  { key: 'bn', name: 'Back-north', p: [0, 0] }, { key: 'bs', name: 'Back-south', p: [0, LAHAN.h] },
+];
+const H = { show: true, tahap: 1, along: 0, set: 0, rot: 0, floor: 0, measured: null }; // measured: {fn, fs, bn, bs} typed by hand
+try { Object.assign(H, JSON.parse(localStorage.getItem('tataHouse') || '{}')); } catch {}
+const save = () => { try { localStorage.setItem('tataHouse', JSON.stringify(H)); } catch {} };
+
+const frame = () => { // unit vectors (east, north) of plan +x / +y, and the ENU position of plan (0,0)
+  const r = H.rot * rad, rot = ([x, y]) => [x * Math.cos(r) + y * Math.sin(r), -x * Math.sin(r) + y * Math.cos(r)];
+  const e = rot(e0), u = rot(u0);
+  const A = [H.along * u0[0] - H.set * e0[0], H.along * u0[1] - H.set * e0[1]]; // front-north corner
+  return { e, u, A, enu: ([px, py]) => [A[0] + (px - LAHAN.w) * e[0] + py * u[0], A[1] + (px - LAHAN.w) * e[1] + py * u[1]] };
+};
+// corner ground heights relative to the front-north corner: typed, else from the DEM plane
+const cornerGround = () => {
+  if (H.measured) return H.measured;
+  const f = frame(), ref = gAbs(...f.enu(CORNERS[0].p));
+  return Object.fromEntries(CORNERS.map(c => [c.key, +(gAbs(...f.enu(c.p)) - ref).toFixed(2)]));
+};
+const groundAt = (g, px, py) => { const tx = px / LAHAN.w, ty = py / LAHAN.h; // bilinear over the footprint
+  return (1 - tx) * (1 - ty) * g.bn + tx * (1 - ty) * g.fn + (1 - tx) * ty * g.bs + tx * ty * g.fs; };
+const volumes = (g, F) => { let cut = 0, fill = 0; const s = 0.25;
+  for (let x = s / 2; x < LAHAN.w; x += s) for (let y = s / 2; y < LAHAN.h; y += s) {
+    const d = groundAt(g, x, y) - F; if (d > 0) cut += d * s * s; else fill -= d * s * s; }
+  return { cut, fill }; };
+
+// --- three.js: house model from js/tampilan3d.js, rendered inside MapLibre as a custom layer ---
+const hidden = Object.assign(document.createElement('div'), { style: 'position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none' });
+document.body.appendChild(hidden);
+const tiga = buat3D(hidden);
+tiga.renderer.setAnimationLoop(null);  // we only borrow its house group
+const houseState = () => ({ tahap: H.tahap, lantai: 1, ghost: false, tanpaAtap: false, warnaTahap: true, potong: null, fokus: null, struktur2d: false, struktur3d: false });
+const scene3 = new THREE.Scene();
+scene3.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.6));
+const sun3 = new THREE.DirectionalLight(0xffffff, 1.6); sun3.position.set(-20, 40, -30); scene3.add(sun3);
+const place = new THREE.Group(); // plan frame → local ENU frame (x east, y up, z south), origin = P1
+scene3.add(place);
+const patchGeo = new THREE.PlaneGeometry(LAHAN.w, LAHAN.h, 24, 20);
+patchGeo.rotateX(-Math.PI / 2); patchGeo.translate(LAHAN.w / 2, 0, LAHAN.h / 2); // plan x/z, y up
+patchGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(patchGeo.attributes.position.count * 3), 3));
+const patch = new THREE.Mesh(patchGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false }));
+const floorLine = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[0, 0], [LAHAN.w, 0], [LAHAN.w, LAHAN.h], [0, LAHAN.h]].map(([x, z]) => new THREE.Vector3(x, 0.02, z))),
+  new THREE.LineBasicMaterial({ color: 0xffffff }));
+place.add(tiga.rumah, patch, floorLine);
+function buildHouse() {
+  tiga.renderUlang(houseState());
+  for (const g of tiga.rumah.children) { g.scale.y = 1; g.position.y = 0; } // no "grow" animation here
+}
+const CUT = new THREE.Color('#d32f2f'), FILL = new THREE.Color('#1e6fd9'), ZERO = new THREE.Color('#f5f5f5');
+let F = 0, G = cornerGround(); // floor & ground, relative to the front-north corner ground
+function updatePatch() {
+  const P = patchGeo.attributes.position, C = patchGeo.attributes.color, c = new THREE.Color();
+  for (let i = 0; i < P.count; i++) {
+    const d = groundAt(G, P.getX(i), P.getZ(i)) - F;
+    P.setY(i, d);
+    c.lerpColors(ZERO, d > 0 ? CUT : FILL, Math.min(1, Math.abs(d) / 1.5)); C.setXYZ(i, c.r, c.g, c.b);
+  }
+  P.needsUpdate = C.needsUpdate = true; patchGeo.computeBoundingSphere();
+}
+const houseLayer = {
+  id: 'house', type: 'custom', renderingMode: '3d',
+  onAdd(m, gl) { this.camera = new THREE.Camera();
+    this.renderer = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true }); this.renderer.autoClear = false; },
+  render(gl, args) {
+    if (!H.show) return;
+    const f = frame(), refAbs = gAbs(...f.enu(CORNERS[0].p)), k = +$('exag').value;
+    // with terrain on, MapLibre 5 draws the ground at (absolute elevation × exaggeration). Sit the front-north corner on
+    // the rendered terrain (not exaggerated house); fall back to the DEM plane until the terrain tile is there.
+    const onTerrain = is3d && map.queryTerrainElevation(toLL(f.enu(CORNERS[0].p)));
+    const alt = is3d ? (onTerrain ?? refAbs * k) + F : 0;
+    const o = maplibregl.MercatorCoordinate.fromLngLat(PTS[0], alt), s = o.meterInMercatorCoordinateUnits();
+    const l = new THREE.Matrix4().makeTranslation(o.x, o.y, o.z).scale(new THREE.Vector3(s, -s, s)).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+    place.matrixAutoUpdate = false;
+    place.matrix.makeBasis(new THREE.Vector3(f.e[0], 0, -f.e[1]), new THREE.Vector3(0, 1, 0), new THREE.Vector3(f.u[0], 0, -f.u[1]));
+    const O = f.enu([0, 0]); place.matrix.setPosition(O[0], 0, -O[1]);
+    this.camera.projectionMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix).multiply(l);
+    this.renderer.resetState();
+    this.renderer.render(scene3, this.camera);
+  },
+};
+map.on('load', () => map.addLayer(houseLayer));
+
+// corner labels on the map
+const cornerMarks = CORNERS.map(() => new maplibregl.Marker({ opacityWhenCovered: '1', element: el('cmark', '') }).setLngLat(PTS[0]).addTo(map));
+const fmt = (d) => (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2);
+const digTxt = (d) => Math.abs(d) < 0.005 ? '±0' : d > 0 ? `dig ${d.toFixed(2)} m` : `fill ${(-d).toFixed(2)} m`;
+
+function sectionSvg() { // cut across the house, back (left) → road (right), at the north and south walls
+  const top = { 0: 0.4, 1: 3, 2: 6, 3: 6 + 2.6 }[H.tahap];
+  const xs = Array.from({ length: 25 }, (_, i) => i * LAHAN.w / 24);
+  const gN = xs.map(x => groundAt(G, x, 0)), gS = xs.map(x => groundAt(G, x, LAHAN.h)), gM = xs.map(x => groundAt(G, x, LAHAN.h / 2));
+  const lo = Math.min(F, ...gN, ...gS) - 1, hi = Math.max(F + top, ...gN, ...gS) + 0.6;
+  const W = 370, pad = 26, sc = (W - 2 * pad) / (LAHAN.w + 2), Hh = (hi - lo) * sc + 26;
+  const X = x => pad + (x + 1) * sc, Y = z => (hi - z) * sc + 6;
+  const line = (g) => xs.map((x, i) => `${X(x).toFixed(1)},${Y(g[i]).toFixed(1)}`).join(' ');
+  // cut/fill band between floor and the mid-line ground
+  const band = xs.map((x, i) => `${X(x).toFixed(1)},${Y(gM[i]).toFixed(1)}`).concat(`${X(LAHAN.w)},${Y(F)}`, `${X(0)},${Y(F)}`).join(' ');
+  const floors = [0, 3, 6].filter(b => b < top).map(b => `<rect x="${X(0)}" y="${Y(F + Math.min(top, b + 3))}" width="${LAHAN.w * sc}" height="${Math.min(3, top - b) * sc}" fill="none" stroke="#999" stroke-dasharray="${b ? '3 2' : ''}"/>`).join('');
+  const clip = `<clipPath id="above"><rect x="0" y="0" width="${W}" height="${Y(F)}"/></clipPath><clipPath id="below"><rect x="0" y="${Y(F)}" width="${W}" height="${Hh}"/></clipPath>`;
+  $('section').setAttribute('viewBox', `0 0 ${W} ${Hh}`); $('section').setAttribute('height', Hh);
+  $('section').innerHTML = `<defs>${clip}</defs>
+    <polygon points="${band}" fill="#d32f2f" fill-opacity=".35" clip-path="url(#above)"/>
+    <polygon points="${band}" fill="#1e6fd9" fill-opacity=".35" clip-path="url(#below)"/>
+    ${floors}
+    <line x1="${X(0)}" x2="${X(LAHAN.w)}" y1="${Y(F)}" y2="${Y(F)}" stroke="#1c1c1e" stroke-width="2"/>
+    <polyline points="${line(gN)}" fill="none" stroke="#6d4c41" stroke-width="1.6"/>
+    <polyline points="${line(gS)}" fill="none" stroke="#6d4c41" stroke-width="1.6" stroke-dasharray="4 3"/>
+    <text x="${X(0)}" y="${Hh - 4}" font-size="10" fill="#666">← back (west)</text>
+    <text x="${X(LAHAN.w)}" y="${Hh - 4}" font-size="10" fill="#666" text-anchor="end">road (front) →</text>
+    <text x="${X(LAHAN.w) + 3}" y="${Y(F) + 3}" font-size="10">±0.00</text>
+    <text x="${pad}" y="12" font-size="10" fill="#6d4c41">— ground north wall · - - south wall · band = middle (true scale, 1 m = ${sc.toFixed(0)} px)</text>`;
+}
+
+function updateHouse() {
+  G = cornerGround(); F = H.floor;
+  const f = frame();
+  $('corners').innerHTML = CORNERS.map(c => { const d = G[c.key] - F;
+    return `<tr><td>${c.name}</td><td><input type="number" step="0.05" data-k="${c.key}" value="${G[c.key].toFixed(2)}" ${c.key === 'fn' ? 'disabled title="Reference: 0.00"' : ''}></td>` +
+      `<td class="${d > 0 ? 'cut' : 'fill'}">${digTxt(d)}</td></tr>`; }).join('');
+  CORNERS.forEach((c, i) => { const d = G[c.key] - F, m = cornerMarks[i];
+    m.setLngLat(toLL(f.enu(c.p))); m.getElement().textContent = digTxt(d);
+    m.getElement().style.background = d > 0 ? '#c62828' : '#1565c0'; m.getElement().hidden = !H.show; });
+  const v = volumes(G, F);
+  $('vCut').textContent = v.cut.toFixed(1); $('vFill').textContent = v.fill.toFixed(1);
+  $('vNet').textContent = (v.cut - v.fill >= 0 ? '+' : '') + (v.cut - v.fill).toFixed(1);
+  $('groundSrc').textContent = H.measured ? 'Ground: your typed heights.' :
+    `Ground: SRTM slope (${(Math.hypot(gx, gy) * 100).toFixed(0)}%, ${compass(downhill)}) — replace with measured heights.`;
+  for (const [id, key, unit] of [['hAlong', 'along', ' m'], ['hSet', 'set', ' m'], ['hRot', 'rot', '°'], ['hFloor', 'floor', ' m']]) {
+    $(id).value = H[key]; $(id).nextElementSibling.textContent = (key === 'floor' ? fmt(H[key]) : H[key]) + unit; }
+  $('hTahap').value = H.tahap; $('hTahapV').textContent = H.tahap;
+  $('hTahap').title = TAHAP[H.tahap].nama;
+  place.visible = H.show;
+  updatePatch(); sectionSvg(); save();
+  map.triggerRepaint();
+}
+for (const [id, key] of [['hAlong', 'along'], ['hSet', 'set'], ['hRot', 'rot'], ['hFloor', 'floor']])
+  $(id).oninput = e => { H[key] = +e.target.value; updateHouse(); };
+$('hTahap').oninput = e => { H.tahap = +e.target.value; buildHouse(); updateHouse(); };
+$('hShow').checked = H.show;
+$('hShow').onchange = e => { H.show = e.target.checked; updateHouse(); };
+$('corners').onchange = e => { const k = e.target.dataset.k; if (!k) return;
+  H.measured = { ...cornerGround(), [k]: +e.target.value || 0, fn: 0 }; updateHouse(); };
+$('hDem').onclick = () => { H.measured = null; updateHouse(); };
+$('hBalance').onclick = () => { // bisection: floor where cut = fill
+  let lo = -10, hi = 10;
+  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2, v = volumes(G, mid); if (v.cut > v.fill) lo = mid; else hi = mid; }
+  H.floor = Math.round((lo + hi) / 2 / 0.05) * 0.05; updateHouse(); };
+
+$('kmzBtn').onclick = () => {
+  const f = frame(), A = f.enu([LAHAN.w, 0]);
+  const toLocal = v => { const dx = v.x - LAHAN.w, dz = v.z; // plan (x, up, z=south) → [east, north, up] from the front-north corner
+    return [dx * f.e[0] + dz * f.u[0], dx * f.e[1] + dz * f.u[1], v.y]; };
+  const height = new THREE.Box3().setFromObject(tiga.rumah).max.y;
+  const blob = kmz({
+    parcel: PTS, lots: LOTS.map(l => ({ name: l.name, ll: l.ring.map(nm => PTS[at(nm)]) })),
+    origin: toLL(A), originAlt: F, floorAbs: gAbs(...A) + F, height,
+    footprint: [[0, 0], [LAHAN.w, 0], [LAHAN.w, LAHAN.h], [0, LAHAN.h]].map(p => toLL(f.enu(p))),
+    look: (() => { const [lo, la] = toLL(f.enu([LAHAN.w / 2, LAHAN.h / 2])); return { lon: lo, lat: la, heading: downhill - 90 }; })(),
+    dae: colladaDari(tiga.rumah, toLocal),
+  });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `tata-home-phase${H.tahap}.kmz` });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+buildHouse();
+updateHouse();
 </script>
 </body>
 </html>
