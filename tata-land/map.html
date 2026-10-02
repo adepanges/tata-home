@@ -49,6 +49,7 @@
   .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .row button { font: 600 12px system-ui, sans-serif; padding: 5px 10px; border: 1px solid #ccc; border-radius: 6px; background: #f4f4f6; cursor: pointer; }
   .row button.dark { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+  .warn { background: #fff4e0; border: 1px solid #f0c674; border-radius: 6px; padding: 6px 8px; margin: 6px 0; font-size: 12px; }
   .cut { color: #c62828; } .fill { color: #1565c0; }
   .cmark { font: 700 11px system-ui, sans-serif; color: #fff; padding: 1px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
   #section { display: block; margin-top: 8px; height: auto; }
@@ -83,16 +84,18 @@
   <h2>House · Tata Home</h2>
   <div class="ctl">
     <label><input id="hShow" type="checkbox" checked> Show house</label>
-    <label>Phase <input id="hTahap" type="range" min="0" max="3" step="1" value="1"><output id="hTahapV"></output></label>
+    <label>Phase <input id="hTahap" type="range" min="0" max="3" step="1" value="3"><output id="hTahapV"></output></label>
     <label title="Slide the house along the road (south +)">Along road <input id="hAlong" type="range" min="-3" max="9" step="0.1" value="0"><output></output></label>
     <label title="Distance of the house front from the road boundary">Setback <input id="hSet" type="range" min="0" max="6" step="0.1" value="0"><output></output></label>
     <label title="Extra rotation; 0 = front parallel to the road">Rotate <input id="hRot" type="range" min="-20" max="20" step="0.5" value="0"><output></output></label>
     <label title="Floor level ±0.00 relative to the ground at the front-north (road) corner">Floor ±0.00 <input id="hFloor" type="range" min="-4" max="4" step="0.05" value="0"><output></output></label>
   </div>
+  <div class="warn" id="fitNote" hidden></div>
   <div class="sub">Floor ±0.00 is measured from the ground at the <b>front-north corner</b> (road side) — the easiest corner to mark with a stake.</div>
   <h2>Ground at house corners · cut / fill</h2>
   <table class="corners"><thead><tr><th>Corner</th><th>Ground</th><th>vs floor</th></tr></thead><tbody id="corners"></tbody></table>
   <div class="row"><button id="hBalance" title="Set the floor where cut volume = fill volume">Balance cut/fill</button>
+    <button id="hFit" title="Smallest move that puts the whole house (walls, columns, roof edge) inside the parcel border">Fit inside border</button>
     <button id="hDem" title="Forget typed heights, use the slope from the DEM again">Ground from DEM</button></div>
   <div class="stats" style="margin-top:8px">
     <div><b id="vCut"></b><span>dig (cut) m³</span></div>
@@ -319,8 +322,11 @@ const CORNERS = [ // plan corners; front = road side
   { key: 'fn', name: 'Front-north', p: [LAHAN.w, 0] }, { key: 'fs', name: 'Front-south', p: [LAHAN.w, LAHAN.h] },
   { key: 'bn', name: 'Back-north', p: [0, 0] }, { key: 'bs', name: 'Back-south', p: [0, LAHAN.h] },
 ];
-const H = { show: true, tahap: 1, along: 0, set: 0, rot: 0, floor: 0, measured: null }; // measured: {fn, fs, bn, bs} typed by hand
-try { Object.assign(H, JSON.parse(localStorage.getItem('tataHouse') || '{}')); } catch {}
+// v2: full house (phase 3) by default, placed inside the border
+const H = { v: 2, show: true, tahap: 3, along: 0, set: 0, rot: 0, floor: 0, measured: null, fitted: false }; // measured: {fn, fs, bn, bs} typed by hand
+try { const saved = JSON.parse(localStorage.getItem('tataHouse') || '{}'); if (saved.v === 2) Object.assign(H, saved); } catch {}
+const inParcel = ([px, py]) => xy.reduce((ins, [x1, y1], i) => { const [x2, y2] = next(i);
+  return (y1 > py) !== (y2 > py) && px < x1 + (py - y1) * (x2 - x1) / (y2 - y1) ? !ins : ins; }, false);
 const save = () => { try { localStorage.setItem('tataHouse', JSON.stringify(H)); } catch {} };
 
 const frame = () => { // unit vectors (east, north) of plan +x / +y, and the ENU position of plan (0,0)
@@ -448,6 +454,10 @@ function updateHouse() {
   $('hTahap').value = H.tahap; $('hTahapV').textContent = H.tahap;
   $('hTahap').title = TAHAP[H.tahap].nama;
   place.visible = H.show;
+  const out = outsideArea();
+  $('fitNote').hidden = out < 0.05;
+  $('fitNote').innerHTML = `⚠ About <b>${out.toFixed(1)} m²</b> of the house is outside the parcel border. ` +
+    `The 12 × 10 m plan doesn't fit fully: the parcel narrows at P4 (only ~11.2 m deep there, and the P4–P5 side cuts across the back-south corner).`;
   updatePatch(); sectionSvg(); save();
   map.triggerRepaint();
 }
@@ -459,6 +469,41 @@ $('hShow').onchange = e => { H.show = e.target.checked; updateHouse(); };
 $('corners').onchange = e => { const k = e.target.dataset.k; if (!k) return;
   H.measured = { ...cornerGround(), [k]: +e.target.value || 0, fn: 0 }; updateHouse(); };
 $('hDem').onclick = () => { H.measured = null; updateHouse(); };
+// outer extent of the built model in plan coordinates — walls & columns stick out past the 12 × 10 m grid lines
+function planExtent() {
+  tiga.rumah.updateWorldMatrix(true, true);
+  const inv = tiga.rumah.matrixWorld.clone().invert(), box = new THREE.Box3(), b = new THREE.Box3();
+  tiga.rumah.traverse(m => { if (!m.isMesh) return;
+    if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+    box.union(b.copy(m.geometry.boundingBox).applyMatrix4(inv.clone().multiply(m.matrixWorld))); });
+  return [[box.min.x, box.min.z], [box.max.x, box.min.z], [box.max.x, box.max.z], [box.min.x, box.max.z]];
+}
+// smallest setback + slide along the road (keeping the rotation) that puts the extent corners inside the parcel.
+// The parcel narrows at P4, so the full 12 × 10 m plan may not fit: then keep the front and back-north corners
+// inside and let the back-south corner stick out (outsideArea() reports how much).
+function fitInside() {
+  const ext = planExtent(), keep = { along: H.along, set: H.set };
+  const search = (corners) => { let best = null;
+    for (let st = 0; st <= 4; st += 0.02) for (let al = -3; al <= 9; al += 0.02) {
+      const cost = st + Math.abs(al);
+      if (best && cost >= best.cost) continue;
+      H.set = st; H.along = al;
+      const f = frame();
+      if (corners.every(p => inParcel(f.enu(p)))) best = { cost, set: +st.toFixed(2), along: +al.toFixed(2) };
+    }
+    return best; };
+  const best = search(ext) || search(ext.slice(0, 3)); // ext: back-north, front-north, front-south, back-south
+  Object.assign(H, best ? { set: best.set, along: best.along } : keep);
+  H.fitted = true;
+}
+// m² of the model's outer footprint that lies outside the parcel (0.2 m grid)
+function outsideArea() {
+  const ext = planExtent(), f = frame(), s = 0.2; let out = 0;
+  for (let x = ext[0][0] + s / 2; x < ext[1][0]; x += s) for (let y = ext[0][1] + s / 2; y < ext[2][1]; y += s)
+    if (!inParcel(f.enu([x, y]))) out += s * s;
+  return out;
+}
+$('hFit').onclick = () => { fitInside(); updateHouse(); };
 $('hBalance').onclick = () => { // bisection: floor where cut = fill
   let lo = -10, hi = 10;
   for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2, v = volumes(G, mid); if (v.cut > v.fill) lo = mid; else hi = mid; }
@@ -480,6 +525,7 @@ $('kmzBtn').onclick = () => {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 buildHouse();
+if (!H.fitted) fitInside();  // first visit: start fully inside the border
 updateHouse();
 </script>
 </body>

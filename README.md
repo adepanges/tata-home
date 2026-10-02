@@ -33,6 +33,8 @@ menghadap timur (jalan di sisi kanan denah, utara = atas).
 Peta bidang tanah (MapLibre + terrain 3D) dengan model rumah yang sama ditaruh di atasnya:
 
 - Depan rumah (carport, x = 12 di denah) menghadap jalan di sisi timur P1–P6; pojok depan-utara di P1.
+  Default rumah penuh (tahap 3) dan otomatis digeser masuk batas lahan (*Fit inside border*); lahan menyempit di P4,
+  jadi pojok belakang-selatan denah 12 × 10 m masih keluar ±5 m² (peringatan tampil di panel).
   Slider: geser sepanjang jalan, mundur dari jalan, putar, tahap, dan **peil lantai ±0.00** (relatif tanah pojok depan-utara).
 - **Galian / urugan**: tinggi tanah di 4 pojok rumah (default dari kemiringan SRTM, ganti dengan hasil ukur selang air /
   waterpass), volume galian & urugan, tombol *Balance cut/fill*, potongan melintang (true scale), label dig/fill di peta.
